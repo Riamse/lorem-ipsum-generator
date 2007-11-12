@@ -1,0 +1,16 @@
+= Lorem Ipsum Generator =
+
+== Dependencies ==
+
+ # GTK+
+ # Python
+ # PyGTK
+
+== Running Lorem Ipsum Generator ==
+
+On the Unix command-line:
+
+	cd /path/to/lorem-ipsum-generator/ 
+	# Change this to the appropriate file path
+
+	python main.py
