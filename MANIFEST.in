@@ -1,0 +1,7 @@
+include README
+include INSTALL
+include COPYING
+include sample.txt
+include dictionary.txt
+include lorem-ipsum-generator
+include lorem-ipsum-generator.desktop

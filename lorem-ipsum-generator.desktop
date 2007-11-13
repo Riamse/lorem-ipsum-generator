@@ -1,0 +1,11 @@
+[Desktop Entry]
+Encoding=UTF-8
+Version=0.1
+Type=Application
+Terminal=false
+Icon[en]=python
+Name[en]=Lorem Ipsum Generator
+Exec=lorem-ipsum-generator
+Name=Lipsum Generator
+Icon=python
+Category=GNOME;GTK;Utility
