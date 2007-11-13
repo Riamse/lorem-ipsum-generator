@@ -157,44 +157,45 @@ class generator:
 		Generates a single sentence, of variable length.
 		"""
 		if start_with_lorem:
-			sentence = ['Lorem', 'ipsum', 'dolor', 'sit', 'amet,', 'consecitur']
-			previous = (4, 10)
+			sentence = ['Lorem', 'ipsum', 'dolor', 'sit', 'amet,', 'consectetuer', 'adipiscing', 'elit.']
+			previous = (10, 4)
 		else:
 			sentence = []
 			previous = ()
 
-		mu = self.__sentence_mu
-		sigma = self.__sentence_sigma
-		chains = self.__chains
-		end_sentences = self.__end_sentences
-		dictionary = self.__dictionary
+			mu = self.__sentence_mu
+			sigma = self.__sentence_sigma
+			chains = self.__chains
+			end_sentences = self.__end_sentences
+			dictionary = self.__dictionary
 
-		max_length = int(round(random.normalvariate(mu, sigma)))
+			max_length = int(round(random.normalvariate(mu, sigma)))
 
-		for i in range(len(sentence), max(10, max_length)):
-			if chains.has_key(previous):
-				chain = random.choice(chains[previous])
-				length = chain[0]
-				word = random.choice(self.__choose_closest(dictionary, length))
-				word = word.lower()
+			for i in range(len(sentence), max(10, max_length)):
+				if chains.has_key(previous):
+					chain = random.choice(chains[previous])
+					length = chain[0]
+					word = random.choice(self.__choose_closest(dictionary, length))
+					word = word.lower()
 
-				end_word = chain[1]
-				previous = (previous[1], length)
+					end_word = chain[1]
+					previous = (previous[1], length)
 
-				sentence += [word + end_word]
+					sentence += [word + end_word]
 
-				if self.__punctuation_end_sentence.count(end_word):
-					break
-			else:
-				previous = random.choice(end_sentences)
+					if self.__punctuation_end_sentence.count(end_word):
+						break
+				else:
+					previous = random.choice(end_sentences)
+
+			if not self.__punctuation_end_sentence.count(end_word):
+				if self.__punctuation_end_word.count(end_word):
+					sentence[-1] = sentence[-1].rstrip(end_word) + '.'
+				else:
+					sentence[-1] = sentence[-1] + '.'
+
 
 		sentence[0] = sentence[0].capitalize()
-
-		if not self.__punctuation_end_sentence.count(end_word):
-			if self.__punctuation_end_word.count(end_word):
-				sentence[-1] = sentence[-1].rstrip(end_word) + '.'
-			else:
-				sentence[-1] = sentence[-1] + '.'
 
 		sentence = string.join(sentence)
 		return sentence
