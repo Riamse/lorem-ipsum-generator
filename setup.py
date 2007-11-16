@@ -8,7 +8,7 @@ scripts = ['lorem-ipsum-generator']
 if 'bdist_wininst' in sys.argv:
 	if 'sdist' in sys.argv or 'bdist_rpm' in sys.argv:
 		print >> sys.stderr, 'Error: bdist_wininst must be run alone.'
-	scripts.append('lorem_ipsum-generator_postinstall.py')
+	scripts.append('lorem_ipsum_generator_postinstall.py')
 
 setup(
 		name = 'lorem-ipsum-generator',
