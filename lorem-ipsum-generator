@@ -1,4 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/python
+#
+# Copyright James Hales, 2007. <jhales.perth@gmail.com>
 #
 # This file is part of the Lorem Ipsum Generator.
 # 
@@ -19,16 +21,39 @@
 
 import pygtk
 pygtk.require('2.0') 
-# TODO: Cross-check the widgets and options I use with the documentation
-# to see which version I really require
 import gtk
 
 import lipsum
 import string
+from sys import prefix
+from os.path import abspath
 
 class Main:
 	def __init__(self):
+		self.__initialize_generator()
 		self.__initialize_window()
+
+	def __initialize_generator(self):
+		try:
+			sample = abspath(prefix + '/share/lorem-ipsum-generator/sample.txt')
+			dictionary = abspath(prefix + '/share/lorem-ipsum-generator/dictionary.txt')
+			self.__generator = lipsum.generator(sample, dictionary)
+		except IOError:
+			error = gtk.MessageDialog(
+					type=gtk.MESSAGE_ERROR,
+					message_format = 'Missing data files',
+					buttons=gtk.BUTTONS_OK
+					)
+
+			def close_error(widget, data=None):
+				gtk.main_quit()
+				quit()
+			
+			error.format_secondary_text('The Lorem Ipsum Generator could not locate a dictionary or sample file, and as such cannot continue. Check to see that the following files exist:\n\n%s\n%s' % (dictionary, sample))
+			error.connect('response', close_error)
+			error.connect('destroy', close_error)
+			error.show()
+			gtk.main()
 	
 	def __initialize_window(self):
 		# Output area
@@ -86,13 +111,10 @@ class Main:
 		self.__frame_quantity.set_shadow_type(gtk.SHADOW_NONE)
 		
 		self.__checkbutton_startwithlorem = gtk.CheckButton(label='Start with "_Lorem ipsum..."')
-		self.__checkbutton_usexhtml = gtk.CheckButton(label='Insert XHTML _markup')
 
 		self.__vbox_options = gtk.VBox(spacing=6)
 		self.__vbox_options.add(self.__checkbutton_startwithlorem)
 		self.__vbox_options.set_child_packing(self.__checkbutton_startwithlorem, False, True, 0, gtk.PACK_START)
-		self.__vbox_options.add(self.__checkbutton_usexhtml)
-		self.__vbox_options.set_child_packing(self.__checkbutton_usexhtml, False, True, 0, gtk.PACK_START)
 
 		self.__alignment_options = gtk.Alignment(xalign=0.5, yalign=0.5, xscale=1.0, yscale=1.0)
 		self.__alignment_options.add(self.__vbox_options)
@@ -102,7 +124,6 @@ class Main:
 		self.__frame_options.get_label_widget().set_use_markup(True)
 		self.__frame_options.add(self.__alignment_options)
 		self.__frame_options.set_shadow_type(gtk.SHADOW_NONE)
-		#self.__frame_options.set_child_packing(self.__checkbutton_startwithlorem, False, True, 0, gtk.PACK_START)
 
 		self.__hbox_options = gtk.HBox(spacing=6)
 		self.__hbox_options.add(self.__frame_options)
@@ -159,24 +180,6 @@ class Main:
 				)
 
 	def __generate_output(self, widget, data=None):
-		try:
-			sample = '/usr/share/lorem-ipsum-generator/sample.txt'
-			dictionary = '/usr/share/lorem-ipsum-generator/dictionary.txt'
-			generator = lipsum.generator(sample, dictionary)
-		except IOError:
-			error = gtk.MessageDialog(
-					parent=self.__window,
-					type=gtk.MESSAGE_ERROR, 
-					message_format='Could not locate one of the dictionary or sample files, "%s" or "%s".' % (dictionary, sample),
-					buttons=gtk.BUTTONS_OK
-					)
-
-			def close_error(widget, data=None):
-				widget.destroy()
-
-			error.connect('response', close_error)
-			error.show()
-			return False
 
 		quantity = self.__spinbutton_quantity.get_value_as_int()
 		startwithlorem = self.__checkbutton_startwithlorem.get_active()
@@ -185,15 +188,12 @@ class Main:
 
 		for i in range(0, quantity):
 			if self.__radiobutton_quantity_paragraphs.get_active():
-				text += [generator.generate_paragraph(start_with_lorem=(startwithlorem and i == 0))]
+				text += [self.__generator.generate_paragraph(start_with_lorem=(startwithlorem and i == 0))]
 			elif self.__radiobutton_quantity_sentences.get_active():
-				text += [generator.generate_sentence(start_with_lorem=(startwithlorem and i == 0))]
+				text += [self.__generator.generate_sentence(start_with_lorem=(startwithlorem and i == 0))]
 		
 		if self.__radiobutton_quantity_paragraphs.get_active():
-			if self.__checkbutton_usexhtml.get_active():
-				text = '<p>\n\t' + string.join(text, '\n</p>\n<p>\n\t') + '\n</p>'
-			else:
-				text = string.join(text, '\n\n')
+			text = string.join(text, '\n\n')
 		elif self.__radiobutton_quantity_sentences.get_active():
 			text = string.join(text, ' ')
 

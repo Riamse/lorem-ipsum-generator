@@ -1,3 +1,6 @@
+#
+# Copyright James Hales, 2007. <jhales.perth@gmail.com>
+#
 # This file is part of the Lorem Ipsum Generator.
 # 
 # The Lorem Ipsum Generator is free software: you can redistribute it 
@@ -69,11 +72,8 @@ class generator:
 
 			dictionary[length] += [word]
 
-		# TODO:
-		# Raise error if there are no words in the
-		# dictionary
-
 		self.__dictionary = dictionary
+		return True
 	
 	def __generate_chains(self, sample_file):
 		"""
@@ -149,58 +149,65 @@ class generator:
 
 		self.__paragraph_mu = mu
 		self.__paragraph_sigma = sigma
+		return True
+
+	def __start_with_lorem(self):
+		return "Lorem ipsum dolor sit amet, consecteteur adipiscing elit."
 	
-	def generate_sentence(self, start_with_lorem=False):
+	def generate_sentence(self, start_with_lorem=False, distribution=None):
 		"""
 		generate_sentence() -> str
 
 		Generates a single sentence, of variable length.
 		"""
+
+		sentence = []
+		previous = ()
+
+		chains = self.__chains
+		end_sentences = self.__end_sentences
+		dictionary = self.__dictionary
+
+		try:
+			sentence_length = random.normalvariate(sentence_dist[0], sentence_dist[1])
+		except:
+			sentence_length = random.normalvariate(self.__sentence_mu, self.__sentence_sigma)
+		
+		sentence_length = int(round(sentence_length))
+
 		if start_with_lorem:
-			sentence = ['Lorem', 'ipsum', 'dolor', 'sit', 'amet,', 'consectetuer', 'adipiscing', 'elit.']
-			previous = (10, 4)
-		else:
-			sentence = []
-			previous = ()
+			sentence += [self.__start_with_lorem()]
 
-			mu = self.__sentence_mu
-			sigma = self.__sentence_sigma
-			chains = self.__chains
-			end_sentences = self.__end_sentences
-			dictionary = self.__dictionary
+		for i in range(len(sentence), max(10, sentence_length)):
+			if chains.has_key(previous):
+				chain = random.choice(chains[previous])
 
-			max_length = int(round(random.normalvariate(mu, sigma)))
+				word_length = chain[0]
+				end_of_word = chain[1]
 
-			for i in range(len(sentence), max(10, max_length)):
-				if chains.has_key(previous):
-					chain = random.choice(chains[previous])
-					length = chain[0]
-					word = random.choice(self.__choose_closest(dictionary, length))
-					word = word.lower()
+				word = random.choice(self.__choose_closest(dictionary, word_length))
+				word = word.lower()
 
-					end_word = chain[1]
-					previous = (previous[1], length)
+				previous = (previous[1], word_length)
 
-					sentence += [word + end_word]
+				sentence += [word + end_of_word]
 
-					if self.__punctuation_end_sentence.count(end_word):
-						break
-				else:
-					previous = random.choice(end_sentences)
+				if self.__punctuation_end_sentence.count(end_of_word):
+					break
+			else:
+				previous = random.choice(end_sentences)
 
-			if not self.__punctuation_end_sentence.count(end_word):
-				if self.__punctuation_end_word.count(end_word):
-					sentence[-1] = sentence[-1].rstrip(end_word) + '.'
-				else:
-					sentence[-1] = sentence[-1] + '.'
-
+		if not self.__punctuation_end_sentence.count(end_of_word):
+			if self.__punctuation_end_word.count(end_of_word):
+				sentence[-1] = sentence[-1].rstrip(end_of_word) + '.'
+			else:
+				sentence[-1] = sentence[-1] + '.'
 
 		sentence[0] = sentence[0].capitalize()
-
 		sentence = string.join(sentence)
 		return sentence
 
-	def generate_paragraph(self, start_with_lorem=False):
+	def generate_paragraph(self, start_with_lorem=False, paragraph_dist=None):
 		"""
 		generate_paragraph() -> str
 
@@ -212,11 +219,14 @@ class generator:
 		else:
 			paragraph = []
 
-		mu = self.__paragraph_mu
-		sigma = self.__paragraph_sigma
-		max_length = int(round(random.normalvariate(mu, sigma)))
+		try:
+			paragraph_length = random.normalvariate(paragraph_dist[0], paragraph_dist[1])
+		except:
+			paragraph_length = random.normalvariate(self.__paragraph_mu, self.__paragraph_sigma)
 
-		for i in range(len(paragraph), max(max_length, 1)):
+		paragraph_length = int(round(paragraph_length))
+
+		for i in range(len(paragraph), max(paragraph_length, 1)):
 			paragraph += [self.generate_sentence()]
 
 		paragraph = string.join(paragraph)
