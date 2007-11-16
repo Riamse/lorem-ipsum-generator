@@ -112,12 +112,12 @@ class Main:
 		
 		self.__checkbutton_startwithlorem = gtk.CheckButton(label='Start with "_Lorem ipsum..."')
 
-		self.__vbox_options = gtk.VBox(spacing=6)
-		self.__vbox_options.add(self.__checkbutton_startwithlorem)
-		self.__vbox_options.set_child_packing(self.__checkbutton_startwithlorem, False, True, 0, gtk.PACK_START)
+		#self.__vbox_options = gtk.VBox(spacing=6)
+		#self.__vbox_options.add(self.__checkbutton_startwithlorem)
+		#self.__vbox_options.set_child_packing(self.__checkbutton_startwithlorem, False, True, 0, gtk.PACK_START)
 
 		self.__alignment_options = gtk.Alignment(xalign=0.5, yalign=0.5, xscale=1.0, yscale=1.0)
-		self.__alignment_options.add(self.__vbox_options)
+		self.__alignment_options.add(self.__checkbutton_startwithlorem)
 		self.__alignment_options.set_padding(0, 0, 12, 0)
 
 		self.__frame_options = gtk.Frame(label='<b>Options</b>')
