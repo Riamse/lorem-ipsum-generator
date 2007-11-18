@@ -5,9 +5,6 @@ Python module, that generates random "lorem ipsum" text. The Lorem Ipsum
 Generator can produce a given quantity of paragraphs or sentences of "lorem
 ipsum" text.
 
-A screenshot of the Lorem Ipsum Generator 0.1 running on Ubuntu 7.10, with
-Python 2.5.1 and PyGTK 2.12.0.
-
 == About "lorem ipsum" text ==
 
 "Lorem ipsum" text is jumbled, latin text, conventionally used as dummy
