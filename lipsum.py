@@ -176,7 +176,7 @@ class generator:
 		sentence_length = int(round(sentence_length))
 
 		if start_with_lorem:
-			sentence += [self.__start_with_lorem()]
+			return self.__start_with_lorem()
 
 		for i in range(len(sentence), max(10, sentence_length)):
 			if chains.has_key(previous):

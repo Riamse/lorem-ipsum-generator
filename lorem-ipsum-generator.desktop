@@ -1,11 +1,13 @@
 [Desktop Entry]
-Encoding=UTF-8
 Version=0.1
+Encoding=UTF-8
+Name=Lipsum Generator
 Type=Application
 Terminal=false
 Icon[en]=python
 Name[en]=Lorem Ipsum Generator
 Exec=lorem-ipsum-generator
-Name=Lipsum Generator
 Icon=python
 Category=GNOME;GTK;Utility
+GenericName[en_AU]=
+Comment[en_AU]=Generates random lorem ipsum text
