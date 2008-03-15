@@ -161,10 +161,10 @@ class Main:
 		# Advanced options
 		self.__label_sample = gtk.Label("Sample text")
 		self.__file_sample = gtk.FileChooserButton("Sample text")
-		self.__file_sample.set_filename(abspath('./sample.txt'))
+		self.__file_sample.set_filename(abspath(sys.prefix + '/share/lorem-ipsum-generator/sample.txt'))
 		self.__label_dictionary = gtk.Label("Dictionary text")
 		self.__file_dictionary = gtk.FileChooserButton("Dictionary text")
-		self.__file_dictionary.set_filename(abspath('dictionary.txt'))
+		self.__file_dictionary.set_filename(abspath(sys.prefix + '/share/lorem-ipsum-generator/dictionary.txt'))
 		self.__table_files = gtk.Table(2, 2, False)
 		self.__table_files.set_row_spacings(6)
 		self.__table_files.set_col_spacings(6)
