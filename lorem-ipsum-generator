@@ -30,14 +30,19 @@ from os.path import abspath
 
 class Main:
 	def __init__(self):
-		self.__initialize_generator()
 		self.__initialize_window()
+	
+	def __load_contents(self, file):
+		file = open(file, 'r')
+		contents = file.read()
+		file.close()
+		return contents
 
 	def __initialize_generator(self):
 		try:
-			sample = abspath(prefix + '/share/lorem-ipsum-generator/sample.txt')
-			dictionary = abspath(prefix + '/share/lorem-ipsum-generator/dictionary.txt')
-			self.__generator = lipsum.generator(sample, dictionary)
+			sample = self.__load_contents(self.__file_sample.get_filename())
+			dictionary = self.__load_contents(self.__file_dictionary.get_filename())
+			self.__generator = lipsum.markupgenerator(sample, dictionary)
 		except IOError:
 			error = gtk.MessageDialog(
 					type=gtk.MESSAGE_ERROR,
@@ -111,18 +116,21 @@ class Main:
 		self.__frame_quantity.set_shadow_type(gtk.SHADOW_NONE)
 		
 		self.__checkbutton_startwithlorem = gtk.CheckButton(label='Start with "_Lorem ipsum..."')
+		self.__checkbutton_html = gtk.CheckButton(label='Include HTML paragraph tags')
 
-		#self.__vbox_options = gtk.VBox(spacing=6)
-		#self.__vbox_options.add(self.__checkbutton_startwithlorem)
-		#self.__vbox_options.set_child_packing(self.__checkbutton_startwithlorem, False, True, 0, gtk.PACK_START)
+		self.__vbox_options = gtk.VBox(spacing=6)
+		self.__vbox_options.add(self.__checkbutton_startwithlorem)
+		self.__vbox_options.add(self.__checkbutton_html)
+		self.__vbox_options.set_child_packing(self.__checkbutton_startwithlorem, False, True, 0, gtk.PACK_START)
+		self.__vbox_options.set_child_packing(self.__checkbutton_html, False, True, 0, gtk.PACK_START)
 
-		self.__alignment_options = gtk.Alignment(xalign=0.5, yalign=0.5, xscale=1.0, yscale=1.0)
-		self.__alignment_options.add(self.__checkbutton_startwithlorem)
-		self.__alignment_options.set_padding(0, 0, 12, 0)
+		#self.__alignment_options = gtk.Alignment(xalign=0.5, yalign=0.5, xscale=1.0, yscale=1.0)
+		#self.__alignment_options.add(self.__checkbutton_startwithlorem)
+		#self.__alignment_options.set_padding(0, 0, 12, 0)
 
 		self.__frame_options = gtk.Frame(label='<b>Options</b>')
 		self.__frame_options.get_label_widget().set_use_markup(True)
-		self.__frame_options.add(self.__alignment_options)
+		self.__frame_options.add(self.__vbox_options)
 		self.__frame_options.set_shadow_type(gtk.SHADOW_NONE)
 
 		self.__hbox_options = gtk.HBox(spacing=6)
@@ -134,6 +142,9 @@ class Main:
 		# Actions area
 		self.__button_copy = gtk.Button(stock=gtk.STOCK_COPY)
 		self.__button_copy.connect('clicked', self.__copy_output)
+		
+		self.__button_copyexit = gtk.Button(label='Copy and exit')
+		self.__button_copyexit.connect('clicked', self.__copyexit_output)
 
 		self.__button_generate = gtk.Button(label='_Generate text')
 		self.__button_generate.connect('clicked', self.__generate_output)
@@ -141,9 +152,29 @@ class Main:
 		self.__hbox_actions = gtk.HBox(spacing=6)
 		self.__hbox_actions.add(self.__button_generate)
 		self.__hbox_actions.set_child_packing(self.__button_generate, False, True, 0, gtk.PACK_END)
+		self.__hbox_actions.add(self.__button_copyexit)
+		self.__hbox_actions.set_child_packing(self.__button_copyexit, False, True, 0, gtk.PACK_END)
 		self.__hbox_actions.add(self.__button_copy)
 		self.__hbox_actions.set_child_packing(self.__button_copy, False, True, 0, gtk.PACK_END)
 		self.__hbox_actions.set_focus_chain((self.__button_generate, self.__button_copy))
+
+		# Advanced options
+		self.__label_sample = gtk.Label("Sample text")
+		self.__file_sample = gtk.FileChooserButton("Sample text")
+		self.__file_sample.set_filename(abspath('./sample.txt'))
+		self.__label_dictionary = gtk.Label("Dictionary text")
+		self.__file_dictionary = gtk.FileChooserButton("Dictionary text")
+		self.__file_dictionary.set_filename(abspath('dictionary.txt'))
+		self.__table_files = gtk.Table(2, 2, False)
+		self.__table_files.set_row_spacings(6)
+		self.__table_files.set_col_spacings(6)
+		self.__table_files.attach(self.__label_sample, 0, 1, 0, 1, xoptions=gtk.SHRINK)
+		self.__table_files.attach(self.__label_dictionary, 0, 1, 1, 2, xoptions=gtk.SHRINK)
+		self.__table_files.attach(self.__file_sample, 1, 2, 0, 1)
+		self.__table_files.attach(self.__file_dictionary, 1, 2, 1, 2)
+		self.__expander_advanced = gtk.Expander("<b>Advanced options</b>")
+		self.__expander_advanced.set_use_markup(True)
+		self.__expander_advanced.add(self.__table_files)
 
 		# Main window / vbox
 
@@ -152,6 +183,8 @@ class Main:
 		self.__vbox_main.set_child_packing(self.__frame_output, True, True, 0, gtk.PACK_START)
 		self.__vbox_main.add(self.__hbox_options)
 		self.__vbox_main.set_child_packing(self.__hbox_options, False, True, 0, gtk.PACK_START)
+		self.__vbox_main.add(self.__expander_advanced)
+		self.__vbox_main.set_child_packing(self.__expander_advanced, False, True, 0, gtk.PACK_START)
 		self.__vbox_main.add(self.__hbox_actions)
 		self.__vbox_main.set_child_packing(self.__hbox_actions, False, True, 0, gtk.PACK_START)
 		self.__vbox_main.set_border_width(12)
@@ -178,24 +211,38 @@ class Main:
 					self.__textbuffer_output.get_end_iter()
 					)
 				)
+	
+	def __copyexit_output(self, widget, data=None):
+		self.__copy_output(widget, data)
+		self.__destroy(widget, data)
 
 	def __generate_output(self, widget, data=None):
+		self.__initialize_generator()
 
 		quantity = self.__spinbutton_quantity.get_value_as_int()
-		startwithlorem = self.__checkbutton_startwithlorem.get_active()
+		start_with_lorem = self.__checkbutton_startwithlorem.get_active()
+		paragraphs = self.__radiobutton_quantity_paragraphs.get_active()
+		sentences = self.__radiobutton_quantity_sentences.get_active()
+		html = self.__checkbutton_html.get_active()
 
-		text = []
+		text = ""
 
-		for i in range(0, quantity):
-			if self.__radiobutton_quantity_paragraphs.get_active():
-				text += [self.__generator.generate_paragraph(start_with_lorem=(startwithlorem and i == 0))]
-			elif self.__radiobutton_quantity_sentences.get_active():
-				text += [self.__generator.generate_sentence(start_with_lorem=(startwithlorem and i == 0))]
-		
-		if self.__radiobutton_quantity_paragraphs.get_active():
-			text = string.join(text, '\n\n')
-		elif self.__radiobutton_quantity_sentences.get_active():
-			text = string.join(text, ' ')
+		if paragraphs:
+			if html:
+				text = self.__generator.generate_html_paragraphs(
+						quantity = quantity,
+						start_with_lorem = start_with_lorem
+						)
+			else:
+				text = self.__generator.generate_text_paragraphs(
+						quantity = quantity,
+						start_with_lorem = start_with_lorem
+						)
+		elif sentences:
+			text = self.__generator.generate_text_sentences(
+					quantity = quantity,
+					start_with_lorem = start_with_lorem
+					)
 
 		self.__textbuffer_output.set_text(text)
 
