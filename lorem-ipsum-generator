@@ -58,7 +58,6 @@ class Main:
 			error.connect('response', close_error)
 			error.connect('destroy', close_error)
 			error.show()
-			gtk.main()
 	
 	def __initialize_window(self):
 		# Output area
@@ -290,13 +289,14 @@ class Main:
 		sentence_mean = self.__spinbutton_sentence_mean.get_value()
 		sentence_sigma = self.__spinbutton_sentence_sigma.get_value()
 
-		if (not (sentence_mean == 0 and sentence_sigma == 0)):
+		if (sentence_mean > 1e-3 or sentence_sigma > 1e-3):
 			self.__generator.set_sentence_stats(sentence_mean, sentence_sigma)
+			print sentence_mean
 
 		paragraph_mean = self.__spinbutton_paragraph_mean.get_value()
 		paragraph_sigma = self.__spinbutton_paragraph_sigma.get_value()
 
-		if (not (paragraph_mean == 0 and paragraph_sigma == 0)):
+		if (paragraph_mean > 1e-3 or paragraph_sigma > 1e-3):
 			self.__generator.set_paragraph_stats(paragraph_mean, paragraph_sigma)
 
 		text = ""
