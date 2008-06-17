@@ -1,0 +1,11 @@
+10-Mar-08
+
+* Make generator class more general-purpose, open up some of its options, etc.
+* Create super-advanced interface features
+	- Average sentence length
+	- Standard deviation of sentence length
+	- Average paragraph length
+	- Standard deviation of paragraph length
+* Optionally produce markup, e.g. paragraphs, etc.
+* Analyse HTML pages and produce Lipsum text which mimicks formatting as well as words - e.g. headings, lists, etc.
+* Provide "filters" for output markup, e.g. to produce OO.o markup, Markdown, BBcode, etc.

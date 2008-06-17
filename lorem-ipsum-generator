@@ -26,7 +26,7 @@ import gtk
 import lipsum
 import string
 from sys import prefix
-from os.path import abspath
+from os.path import abspath,exists
 
 class Main:
 	def __init__(self):
@@ -158,13 +158,24 @@ class Main:
 		self.__hbox_actions.set_child_packing(self.__button_copy, False, True, 0, gtk.PACK_END)
 		self.__hbox_actions.set_focus_chain((self.__button_generate, self.__button_copy))
 
-		# Advanced options
+
+		# Determine default file paths
+		sample = None
+		dictionary = None
+		for pre in ['./', prefix + '/share/lorem-ipsum-generator/']:
+			trial = abspath(pre + 'sample.txt')
+			if not sample and exists(trial):
+				sample = trial
+			trial = abspath(pre + 'dictionary.txt')
+			if not dictionary and exists(trial):
+				dictionary = trial
+		# File options
 		self.__label_sample = gtk.Label("Sample text")
 		self.__file_sample = gtk.FileChooserButton("Sample text")
-		self.__file_sample.set_filename(abspath(sys.prefix + '/share/lorem-ipsum-generator/sample.txt'))
+		self.__file_sample.set_filename(abspath(sample))
 		self.__label_dictionary = gtk.Label("Dictionary text")
 		self.__file_dictionary = gtk.FileChooserButton("Dictionary text")
-		self.__file_dictionary.set_filename(abspath(sys.prefix + '/share/lorem-ipsum-generator/dictionary.txt'))
+		self.__file_dictionary.set_filename(abspath(dictionary))
 		self.__table_files = gtk.Table(2, 2, False)
 		self.__table_files.set_row_spacings(6)
 		self.__table_files.set_col_spacings(6)
@@ -172,19 +183,70 @@ class Main:
 		self.__table_files.attach(self.__label_dictionary, 0, 1, 1, 2, xoptions=gtk.SHRINK)
 		self.__table_files.attach(self.__file_sample, 1, 2, 0, 1)
 		self.__table_files.attach(self.__file_dictionary, 1, 2, 1, 2)
-		self.__expander_advanced = gtk.Expander("<b>Advanced options</b>")
-		self.__expander_advanced.set_use_markup(True)
-		self.__expander_advanced.add(self.__table_files)
+		self.__expander_files = gtk.Expander("<b>File options</b>")
+		self.__expander_files.set_use_markup(True)
+		self.__expander_files.add(self.__table_files)
+
+		# Stats options
+		self.__label_sentence_stats = gtk.Label("<b>Sentence length</b>")
+		self.__label_sentence_stats.set_use_markup(True)
+		self.__label_sentence_mean = gtk.Label("Mean")
+		self.__label_sentence_sigma = gtk.Label("Sigma")
+		self.__spinbutton_sentence_mean = gtk.SpinButton()
+		self.__spinbutton_sentence_mean.set_range(0, 999)
+		self.__spinbutton_sentence_mean.set_increments(0.1, 1)
+		self.__spinbutton_sentence_mean.set_width_chars(4)
+		self.__spinbutton_sentence_mean.set_value(0)
+		self.__spinbutton_sentence_mean.set_digits(2)
+		self.__spinbutton_sentence_sigma = gtk.SpinButton()
+		self.__spinbutton_sentence_sigma.set_range(0, 999)
+		self.__spinbutton_sentence_sigma.set_increments(0.1, 1)
+		self.__spinbutton_sentence_sigma.set_width_chars(4)
+		self.__spinbutton_sentence_sigma.set_value(0)
+		self.__spinbutton_sentence_sigma.set_digits(2)
+		self.__label_paragraph_stats = gtk.Label("<b>Paragraph length</b>")
+		self.__label_paragraph_stats.set_use_markup(True)
+		self.__label_paragraph_mean = gtk.Label("Mean")
+		self.__label_paragraph_sigma = gtk.Label("Sigma")
+		self.__spinbutton_paragraph_mean = gtk.SpinButton()
+		self.__spinbutton_paragraph_mean.set_range(0, 999)
+		self.__spinbutton_paragraph_mean.set_increments(0.1, 1)
+		self.__spinbutton_paragraph_mean.set_width_chars(4)
+		self.__spinbutton_paragraph_mean.set_value(0)
+		self.__spinbutton_paragraph_mean.set_digits(2)
+		self.__spinbutton_paragraph_sigma = gtk.SpinButton()
+		self.__spinbutton_paragraph_sigma.set_range(0, 999)
+		self.__spinbutton_paragraph_sigma.set_increments(0.1, 1)
+		self.__spinbutton_paragraph_sigma.set_width_chars(4)
+		self.__spinbutton_paragraph_sigma.set_value(0)
+		self.__spinbutton_paragraph_sigma.set_digits(2)
+		self.__table_stats = gtk.Table(4, 3, False)
+		self.__table_stats.set_row_spacings(6)
+		self.__table_stats.set_col_spacings(6)
+		self.__table_stats.attach(self.__label_sentence_stats, 0, 2, 0, 1)
+		self.__table_stats.attach(self.__label_sentence_mean, 0, 1, 1, 2, xoptions=gtk.SHRINK)
+		self.__table_stats.attach(self.__label_sentence_sigma, 0, 1, 2, 3, xoptions=gtk.SHRINK)
+		self.__table_stats.attach(self.__spinbutton_sentence_mean, 1, 2, 1, 2)
+		self.__table_stats.attach(self.__spinbutton_sentence_sigma, 1, 2, 2, 3)
+		self.__table_stats.attach(self.__label_paragraph_stats, 2, 4, 0, 1)
+		self.__table_stats.attach(self.__label_paragraph_mean, 2, 3, 1, 2, xoptions=gtk.SHRINK)
+		self.__table_stats.attach(self.__label_paragraph_sigma, 2, 3, 2, 3, xoptions=gtk.SHRINK)
+		self.__table_stats.attach(self.__spinbutton_paragraph_mean, 3, 4, 1, 2)
+		self.__table_stats.attach(self.__spinbutton_paragraph_sigma, 3, 4, 2, 3)
+		self.__expander_stats = gtk.Expander("<b>Statistics options</b>")
+		self.__expander_stats.set_use_markup(True)
+		self.__expander_stats.add(self.__table_stats)
 
 		# Main window / vbox
-
 		self.__vbox_main = gtk.VBox(spacing=12)
 		self.__vbox_main.add(self.__frame_output)
 		self.__vbox_main.set_child_packing(self.__frame_output, True, True, 0, gtk.PACK_START)
 		self.__vbox_main.add(self.__hbox_options)
 		self.__vbox_main.set_child_packing(self.__hbox_options, False, True, 0, gtk.PACK_START)
-		self.__vbox_main.add(self.__expander_advanced)
-		self.__vbox_main.set_child_packing(self.__expander_advanced, False, True, 0, gtk.PACK_START)
+		self.__vbox_main.add(self.__expander_files)
+		self.__vbox_main.set_child_packing(self.__expander_files, False, True, 0, gtk.PACK_START)
+		self.__vbox_main.add(self.__expander_stats)
+		self.__vbox_main.set_child_packing(self.__expander_stats, False, True, 0, gtk.PACK_START)
 		self.__vbox_main.add(self.__hbox_actions)
 		self.__vbox_main.set_child_packing(self.__hbox_actions, False, True, 0, gtk.PACK_START)
 		self.__vbox_main.set_border_width(12)
@@ -224,6 +286,18 @@ class Main:
 		paragraphs = self.__radiobutton_quantity_paragraphs.get_active()
 		sentences = self.__radiobutton_quantity_sentences.get_active()
 		html = self.__checkbutton_html.get_active()
+
+		sentence_mean = self.__spinbutton_sentence_mean.get_value()
+		sentence_sigma = self.__spinbutton_sentence_sigma.get_value()
+
+		if (not (sentence_mean == 0 and sentence_sigma == 0)):
+			self.__generator.set_sentence_stats(sentence_mean, sentence_sigma)
+
+		paragraph_mean = self.__spinbutton_paragraph_mean.get_value()
+		paragraph_sigma = self.__spinbutton_paragraph_sigma.get_value()
+
+		if (not (paragraph_mean == 0 and paragraph_sigma == 0)):
+			self.__generator.set_paragraph_stats(paragraph_mean, paragraph_sigma)
 
 		text = ""
 
