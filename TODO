@@ -6,10 +6,10 @@
 	- Standard deviation of sentence length (DONE)
 	- Average paragraph length (DONE)
 	- Standard deviation of paragraph length (DONE)
-	- Make the values in the GUI reflect automatically generated values
-	- Add buttons to return to default values
-* GUI keeps the same generator object, and updates it only as necessary (e.g. call set_dictionary() if the dictionary is changed, etc.)
+	- Make the values in the GUI reflect automatically generated values (DONE)
+	- Add buttons to return to default values (DONE)
+* GUI keeps the same generator object, and updates it only as necessary (e.g. call set_dictionary() if the dictionary is changed, etc.) (DONE)
 * Optionally produce markup, e.g. paragraphs, etc. (DONE)
 * Analyse HTML pages and produce Lipsum text which mimicks formatting as well as words - e.g. headings, lists, etc.
 * Provide "filters" for output markup, e.g. to produce OO.o markup, Markdown, BBcode, etc. (NOW POSSIBLE, BUT WON'T DO)
-* Fix GUI for advanced features
+* Fix GUI for advanced features (DONE... could use improvement though)
