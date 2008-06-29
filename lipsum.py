@@ -17,11 +17,14 @@
 # along with the Lorem Ipsum Generator.  If not, 
 # see <http://www.gnu.org/licenses/>.
 
+import os
 import math
 import random
 import string
 import re
 import exceptions
+
+newline = os.linesep 
 
 # Exceptions thrown:
 # - Invalid dictionary text
@@ -34,7 +37,7 @@ class InvalidDictionaryText(Exception):
 
 class InvalidSampleText(Exception):
 	def __str__(self):
-		return "Sample text must contain one or more new-line delimited paragraphs, and each paragraph must contain one or more period, question mark, or exclamation mark delimited sentences."
+		return "Sample text must contain one or more empty-line delimited paragraphs, and each paragraph must contain one or more period, question mark, or exclamation mark delimited sentences."
 
 class NoDictionary(Exception):
 	def __str__(self):
@@ -224,7 +227,7 @@ class generator(object):
 	
 	def __generate_paragraph_statistics(self, sample):
 		# Split the sample into a list of paragraphs
-		paragraphs = sample.split('\n\n')
+		paragraphs = sample.split(newline * 2)
 
 		# Analyse paragraphs
 		mean = 0.0
@@ -412,8 +415,8 @@ class markupgenerator(generator):
 		surrounded by HTML pararaph tags.
 		"""
 		return self.__generate_markup_paragraphs(
-				begin_paragraph 	= '<p>\n\t',
-				end_paragraph 		= '\n</p>',
+				begin_paragraph 	= '<p>' + newline + '\t',
+				end_paragraph 		= newline + '</p>',
 				between_paragraphs	= '\n',
 				quantity		= quantity,
 				start_with_lorem 	= start_with_lorem
@@ -426,7 +429,7 @@ class markupgenerator(generator):
 		output =  self.__generate_markup_paragraphs(
 				begin_paragraph 	= '',
 				end_paragraph 		= '',
-				between_paragraphs	= '\n\n',
+				between_paragraphs	= newline * 2,
 				quantity		= quantity,
 				start_with_lorem 	= start_with_lorem
 				)
