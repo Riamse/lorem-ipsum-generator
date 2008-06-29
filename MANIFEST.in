@@ -5,3 +5,5 @@ include sample.txt
 include dictionary.txt
 include lorem-ipsum-generator
 include lorem-ipsum-generator.desktop
+include lorem_ipsum_generator_postinstall.py
+include MANIFEST.in
