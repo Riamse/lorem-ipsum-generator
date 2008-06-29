@@ -12,7 +12,7 @@ if 'bdist_wininst' in sys.argv:
 
 setup(
 		name = 'lorem-ipsum-generator',
-		version = '0.1',
+		version = '0.2',
 		description = 'Generates random lorem ipsum text',
 		long_description = 'Lorem Ipsum Generator provides a GTK+ graphical user interface, and a Python module, that generates random "lorem ipsum" text. The Lorem Ipsum Generator can produce a given quantity of paragraphs or sentences of "lorem ipsum" text.',
 		author = 'James Hales',
