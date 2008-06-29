@@ -227,6 +227,9 @@ class generator(object):
 	
 	def __generate_paragraph_statistics(self, sample):
 		# Split the sample into a list of paragraphs
+		sample = sample.replace('\r\n', '\n')
+		sample = sample.replace('\r', '\n')
+		sample = sample.replace('\n', newline)
 		paragraphs = sample.split(newline * 2)
 
 		# Analyse paragraphs
