@@ -21,6 +21,29 @@ import math
 import random
 import string
 import re
+import exceptions
+
+# Exceptions thrown:
+# - Invalid dictionary text
+# - Invalid sample text
+# - No sample / no dictionary
+
+class InvalidDictionaryText(Exception):
+	def __str__(self):
+		return "Dictionary text must contain one or more white-space delimited words."
+
+class InvalidSampleText(Exception):
+	def __str__(self):
+		return "Sample text must contain one or more new-line delimited paragraphs, and each paragraph must contain one or more period, question mark, or exclamation mark delimited sentences."
+
+class NoDictionary(Exception):
+	def __str__(self):
+		return "No words stored in generator. A valid dictionary text must be supplied."
+
+class NoChains(Exception):
+	def __str__(self):
+		return "No chains stored in generator. A valid sample text must be supplied."
+		
 
 class generator(object):
 	"""
@@ -34,9 +57,9 @@ class generator(object):
 	__delimiters_words 		= [','] + __delimiters_sentences
 
 	# Markov chain statistics (generated)
-	__chains 			= []
-	__chains_starts	 	= []
-	__chains_dictionary		= []
+	__chains 			= {}
+	__chains_starts	 		= []
+	__chains_dictionary		= {}
 
 	# Sentence / paragraph statistics
 	__sentence_mean 		= 0
@@ -105,7 +128,10 @@ class generator(object):
 
 			dictionary[length] += [word]
 
-		self.__chains_dictionary = dictionary
+		if len(dictionary) > 0:
+			self.__chains_dictionary = dictionary
+		else:
+			raise InvalidDictionaryText
 
 	def set_sample(self, sample):
 		"""
@@ -128,7 +154,7 @@ class generator(object):
 
 		previous = (0, 0)
 		chains = {}
-		chains_starts = []
+		chains_starts = [previous]
 
 		for word in words:
 			if not chains.has_key(previous):
@@ -150,25 +176,29 @@ class generator(object):
 			if self.__delimiters_sentences.count(word_delimiter):
 				chains_starts += [previous]
 
-		self.__chains = chains
-		self.__chains_starts = chains_starts
+		if len(chains) > 0 and len(chains_starts) > 0:
+			self.__chains = chains
+			self.__chains_starts = chains_starts
+		else:
+			raise InvalidSampleText
 
 	def __generate_statistics(self, sample):
 		self.__generate_sentence_statistics(sample)
 		self.__generate_paragraph_statistics(sample)
 
-	def __sentence_split(self):
+	def __split_sentences(self, text):
 		sentence_split = ''
 		for delimiter in self.__delimiters_sentences:
 			sentence_split += '\\' + delimiter
 		sentence_split = '[' + sentence_split + ']'
-		return sentence_split
+		text = re.split(sentence_split, text)
+		return text
 
 
 	def __generate_sentence_statistics(self, sample):
 		# Form a regular expression to split the sample into sentences
 		# Split the sample into a list of sentences
-		sentences = re.split(self.__sentence_split(), sample)
+		sentences = self.__split_sentences(sample)
 
 		# Analyse sentences
 		mean = 0.0
@@ -182,13 +212,15 @@ class generator(object):
 				mean += words
 				n += 1
 
-		mean /= n
-		sigma /= n
-		sigma -= mean**2
-		sigma = math.sqrt(sigma)
-
-		self.__sentence_mean = mean
-		self.__sentence_sigma = sigma
+		if n > 0:
+			mean /= n
+			sigma /= n
+			sigma -= mean**2
+			sigma = math.sqrt(sigma)
+			self.__sentence_mean = mean
+			self.__sentence_sigma = sigma
+		else:
+			raise InvalidSampleText
 	
 	def __generate_paragraph_statistics(self, sample):
 		# Split the sample into a list of paragraphs
@@ -200,19 +232,21 @@ class generator(object):
 		n = 0
 
 		for paragraph in paragraphs:
-			sentences = len(re.split(self.__sentence_split(), paragraph))
+			sentences = len(self.__split_sentences(paragraph))
 			if sentences > 0:
 				sigma += sentences**2
 				mean += sentences
 				n += 1
 
-		mean /= n
-		sigma /= n
-		sigma -= mean**2
-		sigma = math.sqrt(sigma)
-
-		self.__paragraph_mean = mean
-		self.__paragraph_sigma = sigma
+		if n > 0:
+			mean /= n
+			sigma /= n
+			sigma -= mean**2
+			sigma = math.sqrt(sigma)
+			self.__paragraph_mean = mean
+			self.__paragraph_sigma = sigma
+		else:
+			raise InvalidSampleText
 
 	def __init__(self, sample=None, dictionary=None):
 		"""
@@ -249,20 +283,25 @@ class generator(object):
 		standard "Lorem ipsum..." first sentence.
 		"""
 
+		if len(self.__chains) == 0 or len(self.__chains_starts) == 0:
+			raise NoChains
+
+		if len(self.__chains_dictionary) == 0:
+			raise NoDictionary
+
 		# Determine randomly the length of the sentence
 		sentence_length = random.normalvariate(self.__sentence_mean, self.__sentence_sigma)
 		sentence_length = max(int(round(sentence_length)), 1)
 
-		# Initialise variables being used
 		sentence = []
 		previous = ()
 
-		# Start with "Lorem ipsum..." if start_with_lorem is True
+		# Start with "Lorem ipsum..."
 		if start_with_lorem:
 			lorem = "lorem ipsum dolor sit amet, consecteteur adipiscing elit".split()
 			sentence += lorem
 		
-		# Otherwise generate a sentence from the "chains"
+		# Generate a sentence from the "chains"
 		word_delimiter = '' # Defined here in case while loop doesn't run
 
 		while len(sentence) < sentence_length:

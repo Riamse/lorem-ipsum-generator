@@ -29,6 +29,9 @@ from sys import prefix
 from os.path import abspath,exists
 
 class Main:
+	__old_sample = None
+	__old_dictionary = None
+
 	def __init__(self):
 		self.__initialize_generator()
 		self.__initialize_window()
@@ -291,24 +294,29 @@ class Main:
 
 		text = ""
 
-		if paragraphs:
-			if html:
-				text = self.__generator.generate_html_paragraphs(
+		try:
+			if paragraphs:
+				if html:
+					text = self.__generator.generate_html_paragraphs(
+							quantity = quantity,
+							start_with_lorem = start_with_lorem
+							)
+				else:
+					text = self.__generator.generate_text_paragraphs(
+							quantity = quantity,
+							start_with_lorem = start_with_lorem
+							)
+			elif sentences:
+				text = self.__generator.generate_text_sentences(
 						quantity = quantity,
 						start_with_lorem = start_with_lorem
 						)
-			else:
-				text = self.__generator.generate_text_paragraphs(
-						quantity = quantity,
-						start_with_lorem = start_with_lorem
-						)
-		elif sentences:
-			text = self.__generator.generate_text_sentences(
-					quantity = quantity,
-					start_with_lorem = start_with_lorem
-					)
-		
-		self.__textbuffer_output.set_text(text)
+			
+			self.__textbuffer_output.set_text(text)
+		except lipsum.NoChains, e:
+			self.__error('Sample text required', e.__str__())
+		except lipsum.NoDictionary, e:
+			self.__error('Dictionary text required', e.__str__())
 
 		return True
 
@@ -317,40 +325,55 @@ class Main:
 			filename = self.__file_sample.get_filename()
 			if filename:
 				sample = self.__load_contents(filename)
-				self.__old_sample = filename
-				self.__generator.set_sample(sample)
-				self.__spinbutton_sentence_mean.set_value(self.__generator.get_sentence_mean())
-				self.__spinbutton_sentence_sigma.set_value(self.__generator.get_sentence_sigma())
-				self.__spinbutton_paragraph_mean.set_value(self.__generator.get_paragraph_mean())
-				self.__spinbutton_paragraph_sigma.set_value(self.__generator.get_paragraph_sigma())
+				try:
+					self.__generator.set_sample(sample)
+					self.__old_sample = filename
+					self.__spinbutton_sentence_mean.set_value(self.__generator.get_sentence_mean())
+					self.__spinbutton_sentence_sigma.set_value(self.__generator.get_sentence_sigma())
+					self.__spinbutton_paragraph_mean.set_value(self.__generator.get_paragraph_mean())
+					self.__spinbutton_paragraph_sigma.set_value(self.__generator.get_paragraph_sigma())
+				except lipsum.InvalidSampleText, e:
+					self.__error('Invalid sample text', e.__str__())
+					if self.__old_sample != filename and self.__old_sample != None:
+						self.__file_sample.set_filename(self.__old_sample)
 		except IOError:
 			self.__ioerror(filename)
-			self.__file_sample.set_filename(self.__old_sample)
+			if self.__old_sample != filename and self.__old_sample != None:
+				self.__file_sample.set_filename(self.__old_sample)
 	
 	def __set_dictionary(self, widget, data=None):
 		try:
 			filename = self.__file_dictionary.get_filename()
 			if filename:
 				dictionary = self.__load_contents(filename)
-				self.__generator.set_dictionary(dictionary)
-				self.__old_dictionary = filename
+				try:
+					self.__generator.set_dictionary(dictionary)
+					self.__old_dictionary = filename
+				except lipsum.InvalidDictionaryText, e:
+					self.__error('Invalid dictionary text', e.__str__())
+					if self.__old_dictionary != filename and self.__old_dictionary != None:
+						self.__file_dictionary.set_filename(self.__old_dictionary)
 		except IOError:
 			self.__ioerror(filename)
-			self.__file_dictionary.set_filename(self.__old_dictionary)
-	
-	def __ioerror(self, filename):
+			if self.__old_dictionary != filename and self.__old_dictionary != None:
+				self.__file_dictionary.set_filename(self.__old_dictionary)
+
+	def __error(self, title, message):
 		error = gtk.MessageDialog(
 				type=gtk.MESSAGE_ERROR,
-				message_format = 'Missing data files',
+				message_format = title,
 				buttons=gtk.BUTTONS_OK
 				)
 
 		def close_error(widget, data=None):
 			widget.destroy()
 		
-		error.format_secondary_markup('The following file could not be found: <b>%s</b>' % filename)
+		error.format_secondary_markup(message)
 		error.connect('response', close_error)
 		error.show()
+
+	def __ioerror(self, filename):
+		self.__error('Missing data files', 'The following file could not be found: <b>%s</b>' % filename)
 
 	def __set_sentence_mean(self, widget, data=None):
 		mean = self.__spinbutton_sentence_mean.get_value()
