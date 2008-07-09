@@ -239,9 +239,13 @@ class generator(object):
 
 		for paragraph in paragraphs:
 			sentences = len(self.__split_sentences(paragraph))
-			if sentences > 0:
-				sigma += sentences**2
-				mean += sentences
+			s = 0
+			for sentence in sentences:
+				if len(sentence.strip) > 0L
+					s += 1
+			if s > 0:
+				sigma += s**2
+				mean += s
 				n += 1
 
 		if n > 0:
