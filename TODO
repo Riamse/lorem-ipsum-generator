@@ -1,6 +1,5 @@
 10-Mar-08
 
-* Make generator class more general-purpose, open up some of its options, etc.
 * Create super-advanced interface features
 	- Average sentence length (DONE)
 	- Standard deviation of sentence length (DONE)
@@ -10,6 +9,14 @@
 	- Add buttons to return to default values (DONE)
 * GUI keeps the same generator object, and updates it only as necessary (e.g. call set_dictionary() if the dictionary is changed, etc.) (DONE)
 * Optionally produce markup, e.g. paragraphs, etc. (DONE)
-* Analyse HTML pages and produce Lipsum text which mimicks formatting as well as words - e.g. headings, lists, etc.
 * Provide "filters" for output markup, e.g. to produce OO.o markup, Markdown, BBcode, etc. (NOW POSSIBLE, BUT WON'T DO)
 * Fix GUI for advanced features (DONE... could use improvement though)
+
+10-Jul-08
+
+* Make generator class more general-purpose, open up some of its options, etc.
+* Analyse HTML pages and produce Lipsum text which mimicks formatting as well as words - e.g. headings, lists, etc.
+* Make GUI optional -- i.e. make lorem-ipsum-generator useable from CLI
+* Make it possible to cancel generation of text mid-way -- e.g. generating 999 paragraphs of text can take a while, it would be nice if I could cancel it if I accidentally selected 999
+* Tooltips
+* Speed up text buffer on generating large amounts -- i.e. the text only gradually appears, and isn't completely there until a few seconds after it has started appearing on the screen 

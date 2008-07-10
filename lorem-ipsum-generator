@@ -22,6 +22,7 @@
 import pygtk
 pygtk.require('2.0') 
 import gtk
+import gobject
 
 import lipsum
 import string
@@ -286,39 +287,43 @@ class Main:
 		self.__destroy(widget, data)
 
 	def __generate_output(self, widget, data=None):
-		quantity = self.__spinbutton_quantity.get_value_as_int()
-		start_with_lorem = self.__checkbutton_startwithlorem.get_active()
-		paragraphs = self.__radiobutton_quantity_paragraphs.get_active()
-		sentences = self.__radiobutton_quantity_sentences.get_active()
-		html = self.__checkbutton_html.get_active()
+		def idle_cb():
+			quantity = self.__spinbutton_quantity.get_value_as_int()
+			start_with_lorem = self.__checkbutton_startwithlorem.get_active()
+			paragraphs = self.__radiobutton_quantity_paragraphs.get_active()
+			sentences = self.__radiobutton_quantity_sentences.get_active()
+			html = self.__checkbutton_html.get_active()
 
-		text = ""
+			text = ""
 
-		try:
-			if paragraphs:
-				if html:
-					text = self.__generator.generate_html_paragraphs(
+			try:
+				if paragraphs:
+					if html:
+						text = self.__generator.generate_html_paragraphs(
+								quantity = quantity,
+								start_with_lorem = start_with_lorem
+								)
+					else:
+						text = self.__generator.generate_text_paragraphs(
+								quantity = quantity,
+								start_with_lorem = start_with_lorem
+								)
+				elif sentences:
+					text = self.__generator.generate_text_sentences(
 							quantity = quantity,
 							start_with_lorem = start_with_lorem
 							)
-				else:
-					text = self.__generator.generate_text_paragraphs(
-							quantity = quantity,
-							start_with_lorem = start_with_lorem
-							)
-			elif sentences:
-				text = self.__generator.generate_text_sentences(
-						quantity = quantity,
-						start_with_lorem = start_with_lorem
-						)
-			
-			self.__textbuffer_output.set_text(text)
-		except lipsum.NoChains, e:
-			self.__error('Sample text required', e.__str__())
-		except lipsum.NoDictionary, e:
-			self.__error('Dictionary text required', e.__str__())
+				
+				self.__textbuffer_output.set_text(text)
+			except lipsum.NoChains, e:
+				self.__error('Sample text required', e.__str__())
+			except lipsum.NoDictionary, e:
+				self.__error('Dictionary text required', e.__str__())
 
-		return True
+			self.__window.window.set_cursor(None)
+
+		self.__window.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.WATCH))
+		gobject.idle_add(idle_cb)
 
 	def __set_sample(self, widget, data=None):
 		try:
