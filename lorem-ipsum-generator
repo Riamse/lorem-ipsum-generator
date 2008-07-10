@@ -221,7 +221,7 @@ class Main:
 		self.__button_reset_stats = gtk.Button(label='Reset statistics')
 		reset_image = gtk.image_new_from_stock('gtk-clear', gtk.ICON_SIZE_BUTTON)
 		self.__button_reset_stats.set_image(reset_image)
-		self.__button_reset_stats.connect('clicked', self.__set_sample)
+		self.__button_reset_stats.connect('clicked', self.__reset_statistics)
 		self.__button_reset_stats.set_alignment(1.0, 0.5)
 		self.__alignment_reset_stats = gtk.Alignment(1.0)
 		self.__alignment_reset_stats.add(self.__button_reset_stats)
@@ -333,10 +333,7 @@ class Main:
 				try:
 					self.__generator.set_sample(sample)
 					self.__old_sample = filename
-					self.__spinbutton_sentence_mean.set_value(self.__generator.get_sentence_mean())
-					self.__spinbutton_sentence_sigma.set_value(self.__generator.get_sentence_sigma())
-					self.__spinbutton_paragraph_mean.set_value(self.__generator.get_paragraph_mean())
-					self.__spinbutton_paragraph_sigma.set_value(self.__generator.get_paragraph_sigma())
+					self.__update_statistic_fields()
 				except lipsum.InvalidSampleText, e:
 					self.__error('Invalid sample text', e.__str__())
 					if self.__old_sample != filename and self.__old_sample != None:
@@ -345,7 +342,13 @@ class Main:
 			self.__ioerror(filename)
 			if self.__old_sample != filename and self.__old_sample != None:
 				self.__file_sample.set_filename(self.__old_sample)
-	
+
+	def __update_statistic_fields(self):
+		self.__spinbutton_sentence_mean.set_value(self.__generator.get_sentence_mean())
+		self.__spinbutton_sentence_sigma.set_value(self.__generator.get_sentence_sigma())
+		self.__spinbutton_paragraph_mean.set_value(self.__generator.get_paragraph_mean())
+		self.__spinbutton_paragraph_sigma.set_value(self.__generator.get_paragraph_sigma())
+
 	def __set_dictionary(self, widget, data=None):
 		try:
 			filename = self.__file_dictionary.get_filename()
@@ -395,6 +398,10 @@ class Main:
 	def __set_paragraph_sigma(self, widget, data=None):
 		sigma = self.__spinbutton_paragraph_sigma.get_value()
 		self.__generator.set_paragraph_sigma(sigma)
+	
+	def __reset_statistics(self, widget, data=None):
+		self.__generator.reset_statistics()
+		self.__update_statistic_fields()
 
 if __name__ == "__main__":
 	main = Main()

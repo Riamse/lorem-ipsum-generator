@@ -185,9 +185,22 @@ class generator(object):
 		else:
 			raise InvalidSampleText
 
+	def reset_statistics(self):
+		self.__sentence_mean = self.__generated_sentence_mean
+		self.__sentence_sigma = self.__generated_sentence_sigma
+		self.__paragraph_mean = self.__generated_paragraph_mean
+		self.__paragraph_sigma = self.__generated_paragraph_sigma
+	
+	def __save_generated_statistics(self):
+		self.__generated_sentence_mean = self.__sentence_mean
+		self.__generated_sentence_sigma = self.__sentence_sigma
+		self.__generated_paragraph_mean = self.__paragraph_mean
+		self.__generated_paragraph_sigma = self.__paragraph_sigma
+
 	def __generate_statistics(self, sample):
 		self.__generate_sentence_statistics(sample)
 		self.__generate_paragraph_statistics(sample)
+		self.__save_generated_statistics()
 
 	def __split_sentences(self, text):
 		sentence_split = ''
