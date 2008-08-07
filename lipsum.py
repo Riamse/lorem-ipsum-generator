@@ -316,13 +316,16 @@ class generator(object):
 		sentence = []
 		previous = ()
 
+		# Generate a sentence from the "chains"
+		word_delimiter = '' # Defined here in case while loop doesn't run
+
 		# Start with "Lorem ipsum..."
 		if start_with_lorem:
 			lorem = "lorem ipsum dolor sit amet, consecteteur adipiscing elit".split()
-			sentence += lorem
-		
-		# Generate a sentence from the "chains"
-		word_delimiter = '' # Defined here in case while loop doesn't run
+			sentence += lorem[:sentence_length]
+			last_char = sentence[-1][-1]
+			if not self.__delimiters_sentences.count(last_char):
+				word_delimiter = last_char
 
 		while len(sentence) < sentence_length:
 			while (not self.__chains.has_key(previous)):
