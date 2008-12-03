@@ -30,379 +30,412 @@ from sys import prefix
 from os.path import abspath,exists
 
 class Main:
-	__old_sample = None
-	__old_dictionary = None
+    __old_sample = None
+    __old_dictionary = None
 
-	def __init__(self):
-		self.__initialize_generator()
-		self.__initialize_window()
+    def __init__(self):
+        self.__initialize_generator()
+        self.__initialize_window()
 
-	
-	def __load_contents(self, file):
-		file = open(file, 'r')
-		contents = file.read()
-		file.close()
-		return contents
+    
+    def __load_contents(self, file):
+        file = open(file, 'r')
+        contents = file.read()
+        file.close()
+        return contents
 
-	def __initialize_generator(self):
-		self.__generator = lipsum.markupgenerator()
-	
-	def __initialize_window(self):
-		# Output area
-		self.__textbuffer_output = gtk.TextBuffer()
+    def __initialize_generator(self):
+        self.__generator = lipsum.MarkupGenerator()
+    
+    def __initialize_window(self):
+        # Output area
+        self.__textbuffer_output = gtk.TextBuffer()
 
-		self.__textview_output = gtk.TextView(buffer=self.__textbuffer_output)
-		self.__textview_output.set_wrap_mode(gtk.WRAP_WORD_CHAR)
-		self.__textview_output.set_editable(False)
-		self.__textview_output.set_left_margin(6)
-		self.__textview_output.set_right_margin(6)
+        self.__textview_output = gtk.TextView(buffer=self.__textbuffer_output)
+        self.__textview_output.set_wrap_mode(gtk.WRAP_WORD_CHAR)
+        self.__textview_output.set_editable(False)
+        self.__textview_output.set_left_margin(6)
+        self.__textview_output.set_right_margin(6)
 
-		self.__scrolledwindow_output = gtk.ScrolledWindow()
-		self.__scrolledwindow_output.set_shadow_type(gtk.SHADOW_IN)
-		self.__scrolledwindow_output.add(self.__textview_output)
-		self.__scrolledwindow_output.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        self.__scrolledwindow_output = gtk.ScrolledWindow()
+        self.__scrolledwindow_output.set_shadow_type(gtk.SHADOW_IN)
+        self.__scrolledwindow_output.add(self.__textview_output)
+        self.__scrolledwindow_output.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
 
-		self.__alignment_output = gtk.Alignment(xalign=0.5, yalign=0.5, xscale=1.0, yscale=1.0)
-		self.__alignment_output.add(self.__scrolledwindow_output)
-		self.__alignment_output.set_padding(0, 0, 12, 0)
+        self.__alignment_output = gtk.Alignment(xalign=0.5, yalign=0.5, xscale=1.0, yscale=1.0)
+        self.__alignment_output.add(self.__scrolledwindow_output)
+        self.__alignment_output.set_padding(0, 0, 12, 0)
 
-		self.__frame_output = gtk.Frame(label='<b>Output</b>')
-		self.__frame_output.get_label_widget().set_use_markup(True)
-		self.__frame_output.add(self.__alignment_output)
-		self.__frame_output.set_shadow_type(gtk.SHADOW_NONE)
+        self.__frame_output = gtk.Frame(label='<b>Output</b>')
+        self.__frame_output.get_label_widget().set_use_markup(True)
+        self.__frame_output.add(self.__alignment_output)
+        self.__frame_output.set_shadow_type(gtk.SHADOW_NONE)
 
-		# Options area
-		self.__spinbutton_quantity = gtk.SpinButton()
-		self.__spinbutton_quantity.set_range(1, 999)
-		self.__spinbutton_quantity.set_increments(1, 10)
-		self.__spinbutton_quantity.set_width_chars(4)
-		self.__spinbutton_quantity.set_value(5)
-		#self.__spinbutton_quantity.set_tooltip_text('Set the quantity of text to be produced, in paragraphs or sentences.')
+        # Options area
+        self.__spinbutton_quantity = gtk.SpinButton()
+        self.__spinbutton_quantity.set_range(1, 999)
+        self.__spinbutton_quantity.set_increments(1, 10)
+        self.__spinbutton_quantity.set_width_chars(4)
+        self.__spinbutton_quantity.set_value(5)
+        #self.__spinbutton_quantity.set_tooltip_text('Set the quantity of text to be produced, in paragraphs or sentences.')
 
-		self.__radiobutton_quantity_paragraphs = gtk.RadioButton(label='_Paragraphs')
-		#self.__radiobutton_quantity_paragraphs.set_tooltip_text('Set the quantity to be measured in paragraphs.')
-		self.__radiobutton_quantity_sentences = gtk.RadioButton(label='_Sentences', group=self.__radiobutton_quantity_paragraphs)
-		#self.__radiobutton_quantity_sentences.set_tooltip_text('Set the quantity to be measured in sentences.')
+        self.__radiobutton_quantity_paragraphs = gtk.RadioButton(label='_Paragraphs')
+        #self.__radiobutton_quantity_paragraphs.set_tooltip_text('Set the quantity to be measured in paragraphs.')
+        self.__radiobutton_quantity_sentences = gtk.RadioButton(label='_Sentences', group=self.__radiobutton_quantity_paragraphs)
+        #self.__radiobutton_quantity_sentences.set_tooltip_text('Set the quantity to be measured in sentences.')
 
-		self.__vbox_quantity_radiobuttons = gtk.VBox()
-		self.__vbox_quantity_radiobuttons.add(self.__radiobutton_quantity_paragraphs)
-		self.__vbox_quantity_radiobuttons.set_child_packing(self.__radiobutton_quantity_paragraphs, False, True, 0, gtk.PACK_START)
-		self.__vbox_quantity_radiobuttons.add(self.__radiobutton_quantity_sentences)
-		self.__vbox_quantity_radiobuttons.set_child_packing(self.__radiobutton_quantity_sentences, False, True, 0, gtk.PACK_START)
+        self.__vbox_quantity_radiobuttons = gtk.VBox()
+        self.__vbox_quantity_radiobuttons.add(self.__radiobutton_quantity_paragraphs)
+        self.__vbox_quantity_radiobuttons.set_child_packing(self.__radiobutton_quantity_paragraphs, False, True, 0, gtk.PACK_START)
+        self.__vbox_quantity_radiobuttons.add(self.__radiobutton_quantity_sentences)
+        self.__vbox_quantity_radiobuttons.set_child_packing(self.__radiobutton_quantity_sentences, False, True, 0, gtk.PACK_START)
 
-		self.__hbox_quantity = gtk.HBox(spacing=6)
-		self.__hbox_quantity.add(self.__spinbutton_quantity)
-		self.__hbox_quantity.set_child_packing(self.__spinbutton_quantity, False, True, 0, gtk.PACK_START)
-		self.__hbox_quantity.add(self.__vbox_quantity_radiobuttons)
-		self.__hbox_quantity.set_child_packing(self.__vbox_quantity_radiobuttons, False, True, 0, gtk.PACK_START)
+        self.__hbox_quantity = gtk.HBox(spacing=6)
+        self.__hbox_quantity.add(self.__spinbutton_quantity)
+        self.__hbox_quantity.set_child_packing(self.__spinbutton_quantity, False, True, 0, gtk.PACK_START)
+        self.__hbox_quantity.add(self.__vbox_quantity_radiobuttons)
+        self.__hbox_quantity.set_child_packing(self.__vbox_quantity_radiobuttons, False, True, 0, gtk.PACK_START)
 
-		self.__alignment_quantity = gtk.Alignment(xalign=0.5, yalign=0.5, xscale=1.0, yscale=1.0)
-		self.__alignment_quantity.add(self.__hbox_quantity)
-		self.__alignment_quantity.set_padding(0, 0, 12, 0)
+        self.__alignment_quantity = gtk.Alignment(xalign=0.5, yalign=0.5, xscale=1.0, yscale=1.0)
+        self.__alignment_quantity.add(self.__hbox_quantity)
+        self.__alignment_quantity.set_padding(0, 0, 12, 0)
 
-		self.__frame_quantity = gtk.Frame(label='<b>_Quantity</b>')
-		self.__frame_quantity.get_label_widget().set_use_underline(True)
-		self.__frame_quantity.get_label_widget().set_mnemonic_widget(self.__spinbutton_quantity)
-		self.__frame_quantity.get_label_widget().set_use_markup(True)
-		self.__frame_quantity.add(self.__alignment_quantity)
-		self.__frame_quantity.set_shadow_type(gtk.SHADOW_NONE)
-		
-		self.__checkbutton_startwithlorem = gtk.CheckButton(label='Start with "_Lorem ipsum..."')
-		#self.__checkbutton_startwithlorem.set_tooltip_text('Output text will begin with the traditional lorem ipsum sentence.')
-		self.__checkbutton_html = gtk.CheckButton(label='Include _HTML paragraph tags')
-		#self.__checkbutton_html.set_tooltip_text('Output paragraphs will be wrapped in HTML paragraph tags.')
+        self.__frame_quantity = gtk.Frame(label='<b>_Quantity</b>')
+        self.__frame_quantity.get_label_widget().set_use_underline(True)
+        self.__frame_quantity.get_label_widget().set_mnemonic_widget(self.__spinbutton_quantity)
+        self.__frame_quantity.get_label_widget().set_use_markup(True)
+        self.__frame_quantity.add(self.__alignment_quantity)
+        self.__frame_quantity.set_shadow_type(gtk.SHADOW_NONE)
+        
+        self.__radiobutton_format_plain = gtk.RadioButton(label='Plain')
+        self.__radiobutton_format_paragraphs = gtk.RadioButton(label='HTML Paragraphs', group=self.__radiobutton_format_plain)
+        self.__radiobutton_format_list = gtk.RadioButton(label='HTML List', group=self.__radiobutton_format_plain)
 
-		self.__vbox_options = gtk.VBox(spacing=6)
-		self.__vbox_options.add(self.__checkbutton_startwithlorem)
-		self.__vbox_options.add(self.__checkbutton_html)
-		self.__vbox_options.set_child_packing(self.__checkbutton_startwithlorem, False, True, 0, gtk.PACK_START)
-		self.__vbox_options.set_child_packing(self.__checkbutton_html, False, True, 0, gtk.PACK_START)
+        self.__vbox_format = gtk.VBox()
+        self.__vbox_format.add(self.__radiobutton_format_plain)
+        self.__vbox_format.set_child_packing(self.__radiobutton_format_plain, False, True, 0, gtk.PACK_START)
+        self.__vbox_format.add(self.__radiobutton_format_paragraphs)
+        self.__vbox_format.set_child_packing(self.__radiobutton_format_paragraphs, False, True, 0, gtk.PACK_START)
+        self.__vbox_format.add(self.__radiobutton_format_list)
+        self.__vbox_format.set_child_packing(self.__radiobutton_format_list, False, True, 0, gtk.PACK_START)
 
-		#self.__alignment_options = gtk.Alignment(xalign=0.5, yalign=0.5, xscale=1.0, yscale=1.0)
-		#self.__alignment_options.add(self.__checkbutton_startwithlorem)
-		#self.__alignment_options.set_padding(0, 0, 12, 0)
+        self.__frame_format = gtk.Frame(label='<b>_Format</b>')
+        self.__frame_format.get_label_widget().set_use_underline(True)
+        self.__frame_format.get_label_widget().set_use_markup(True)
+        self.__frame_format.add(self.__vbox_format)
+        self.__frame_format.set_shadow_type(gtk.SHADOW_NONE)
+        
+        self.__checkbutton_startwithlorem = gtk.CheckButton(label='Start with "_Lorem ipsum..."')
+        #self.__checkbutton_startwithlorem.set_tooltip_text('Output text will begin with the traditional lorem ipsum sentence.')
 
-		self.__frame_options = gtk.Frame(label='<b>Options</b>')
-		self.__frame_options.get_label_widget().set_use_markup(True)
-		self.__frame_options.add(self.__vbox_options)
-		self.__frame_options.set_shadow_type(gtk.SHADOW_NONE)
+        self.__vbox_options = gtk.VBox(spacing=6)
+        self.__vbox_options.add(self.__checkbutton_startwithlorem)
+        self.__vbox_options.set_child_packing(self.__checkbutton_startwithlorem, False, True, 0, gtk.PACK_START)
 
-		self.__hbox_options = gtk.HBox(spacing=6)
-		self.__hbox_options.add(self.__frame_options)
-		self.__hbox_options.set_child_packing(self.__frame_options, False, True, 0, gtk.PACK_END)
-		self.__hbox_options.add(self.__frame_quantity)
-		self.__hbox_options.set_child_packing(self.__frame_quantity, False, True, 0, gtk.PACK_END)
+        #self.__alignment_options = gtk.Alignment(xalign=0.5, yalign=0.5, xscale=1.0, yscale=1.0)
+        #self.__alignment_options.add(self.__checkbutton_startwithlorem)
+        #self.__alignment_options.set_padding(0, 0, 12, 0)
 
-		# Actions area
-		self.__button_copyexit = gtk.Button(label='Copy and _exit')
-		copyexit_image = gtk.image_new_from_stock('gtk-close', gtk.ICON_SIZE_BUTTON)
-		self.__button_copyexit.set_image(copyexit_image)
-		self.__button_copyexit.connect('clicked', self.__copyexit_output)
+        self.__frame_options = gtk.Frame(label='<b>Options</b>')
+        self.__frame_options.get_label_widget().set_use_markup(True)
+        self.__frame_options.add(self.__vbox_options)
+        self.__frame_options.set_shadow_type(gtk.SHADOW_NONE)
 
-		self.__button_copy = gtk.Button(stock=gtk.STOCK_COPY)
-		self.__button_copy.connect('clicked', self.__copy_output)
-		
-		self.__button_generate = gtk.Button(label='_Generate text')
-		self.__button_generate.connect('clicked', self.__generate_output)
+        self.__hbox_options = gtk.HBox(spacing=6)
+        self.__hbox_options.add(self.__frame_options)
+        self.__hbox_options.set_child_packing(self.__frame_options, False, True, 0, gtk.PACK_END)
+        self.__hbox_options.add(self.__frame_format)
+        self.__hbox_options.set_child_packing(self.__frame_format, False, True, 0, gtk.PACK_END)
+        self.__hbox_options.add(self.__frame_quantity)
+        self.__hbox_options.set_child_packing(self.__frame_quantity, False, True, 0, gtk.PACK_END)
 
-		self.__hbox_actions = gtk.HBox(spacing=6)
-		self.__hbox_actions.add(self.__button_generate)
-		self.__hbox_actions.set_child_packing(self.__button_generate, False, True, 0, gtk.PACK_END)
-		self.__hbox_actions.add(self.__button_copy)
-		self.__hbox_actions.set_child_packing(self.__button_copy, False, True, 0, gtk.PACK_END)
-		self.__hbox_actions.add(self.__button_copyexit)
-		self.__hbox_actions.set_child_packing(self.__button_copyexit, False, True, 0, gtk.PACK_END)
-		self.__hbox_actions.set_focus_chain((self.__button_generate, self.__button_copy, self.__button_copyexit))
+        # Actions area
+        self.__button_copyexit = gtk.Button(label='Copy and _exit')
+        copyexit_image = gtk.image_new_from_stock('gtk-close', gtk.ICON_SIZE_BUTTON)
+        self.__button_copyexit.set_image(copyexit_image)
+        self.__button_copyexit.connect('clicked', self.__copyexit_output)
+
+        self.__button_copy = gtk.Button(stock=gtk.STOCK_COPY)
+        self.__button_copy.connect('clicked', self.__copy_output)
+        
+        self.__button_generate = gtk.Button(label='_Generate text')
+        self.__button_generate.connect('clicked', self.__generate_output)
+
+        self.__hbox_actions = gtk.HBox(spacing=6)
+        self.__hbox_actions.add(self.__button_generate)
+        self.__hbox_actions.set_child_packing(self.__button_generate, False, True, 0, gtk.PACK_END)
+        self.__hbox_actions.add(self.__button_copy)
+        self.__hbox_actions.set_child_packing(self.__button_copy, False, True, 0, gtk.PACK_END)
+        self.__hbox_actions.add(self.__button_copyexit)
+        self.__hbox_actions.set_child_packing(self.__button_copyexit, False, True, 0, gtk.PACK_END)
+        self.__hbox_actions.set_focus_chain((self.__button_generate, self.__button_copy, self.__button_copyexit))
 
 
-		# Determine default file paths
-		sample = None
-		dictionary = None
-		for pre in ['./', prefix + '/share/lorem-ipsum-generator/']:
-			trial = abspath(pre + 'sample.txt')
-			if not sample and exists(trial):
-				sample = trial
-			trial = abspath(pre + 'dictionary.txt')
-			if not dictionary and exists(trial):
-				dictionary = trial
-		# Advanced options
-		self.__label_sample = gtk.Label("Sample text")
-		self.__label_sample.set_alignment(0, 0.5)
-		self.__file_sample = gtk.FileChooserButton("Sample text")
-		self.__file_sample.connect('selection-changed', self.__set_sample)
-		self.__file_sample.set_filename(abspath(sample))
-		#self.__file_sample.set_tooltip_text('Set the sample file the generated text is based on.')
-		self.__label_dictionary = gtk.Label("Dictionary text")
-		self.__label_dictionary.set_alignment(0, 0.5)
-		self.__file_dictionary = gtk.FileChooserButton("Dictionary text")
-		self.__file_dictionary.connect('selection-changed', self.__set_dictionary)
-		self.__file_dictionary.set_filename(abspath(dictionary))
-		#self.__file_dictionary.set_tooltip_text('Set the file containig the words the generated text consists of.')
-		self.__label_sentence_stats = gtk.Label("Sentence length")
-		self.__label_sentence_mean = gtk.Label("mean")
-		self.__label_sentence_sigma = gtk.Label("standard deviation")
-		self.__label_sentence_stats.set_alignment(0, 0.5)
-		self.__spinbutton_sentence_mean = gtk.SpinButton()
-		self.__spinbutton_sentence_mean.set_range(0, 999)
-		self.__spinbutton_sentence_mean.set_increments(0.1, 1)
-		self.__spinbutton_sentence_mean.set_width_chars(4)
-		self.__spinbutton_sentence_mean.set_value(0)
-		self.__spinbutton_sentence_mean.set_digits(2)
-		#self.__spinbutton_sentence_mean.set_tooltip_text('Set the mean length of the randomly generated sentences, in words.')
-		self.__spinbutton_sentence_mean.connect('changed', self.__set_sentence_mean)
-		self.__spinbutton_sentence_sigma = gtk.SpinButton()
-		self.__spinbutton_sentence_sigma.set_range(0, 999)
-		self.__spinbutton_sentence_sigma.set_increments(0.1, 1)
-		self.__spinbutton_sentence_sigma.set_width_chars(4)
-		self.__spinbutton_sentence_sigma.set_value(0)
-		self.__spinbutton_sentence_sigma.set_digits(2)
-		#self.__spinbutton_sentence_sigma.set_tooltip_text('Set the standard deviation of the lengths of the randomly generated sentences, in words.')
-		self.__spinbutton_sentence_sigma.connect('changed', self.__set_sentence_sigma)
-		self.__label_paragraph_stats = gtk.Label("Paragraph length")
-		self.__label_paragraph_mean = gtk.Label("mean")
-		self.__label_paragraph_sigma = gtk.Label("standard deviation")
-		self.__label_paragraph_stats.set_alignment(0, 0.5)
-		self.__spinbutton_paragraph_mean = gtk.SpinButton()
-		self.__spinbutton_paragraph_mean.set_range(0, 999)
-		self.__spinbutton_paragraph_mean.set_increments(0.1, 1)
-		self.__spinbutton_paragraph_mean.set_width_chars(4)
-		self.__spinbutton_paragraph_mean.set_value(0)
-		self.__spinbutton_paragraph_mean.set_digits(2)
-		#self.__spinbutton_paragraph_mean.set_tooltip_text('Set the mean length of the randomly generated paragraphs, in sentences.')
-		self.__spinbutton_paragraph_mean.connect('changed', self.__set_paragraph_mean)
-		self.__spinbutton_paragraph_sigma = gtk.SpinButton()
-		self.__spinbutton_paragraph_sigma.set_range(0, 999)
-		self.__spinbutton_paragraph_sigma.set_increments(0.1, 1)
-		self.__spinbutton_paragraph_sigma.set_width_chars(4)
-		self.__spinbutton_paragraph_sigma.set_value(0)
-		self.__spinbutton_paragraph_sigma.set_digits(2)
-		#self.__spinbutton_paragraph_sigma.set_tooltip_text('Set the standard deviation of the lengths of the randomly generated paragraphs, in sentences.')
-		self.__spinbutton_paragraph_sigma.connect('changed', self.__set_paragraph_sigma)
-		self.__button_reset_stats = gtk.Button(label='Reset statistics')
-		reset_image = gtk.image_new_from_stock('gtk-clear', gtk.ICON_SIZE_BUTTON)
-		self.__button_reset_stats.set_image(reset_image)
-		self.__button_reset_stats.connect('clicked', self.__reset_statistics)
-		self.__button_reset_stats.set_alignment(1.0, 0.5)
-		self.__alignment_reset_stats = gtk.Alignment(1.0)
-		self.__alignment_reset_stats.add(self.__button_reset_stats)
-		self.__table_advanced = gtk.Table(5, 4, False)
-		self.__table_advanced.set_row_spacings(6)
-		self.__table_advanced.set_col_spacings(6)
-		self.__table_advanced.attach(self.__label_sample, 0, 1, 0, 1, xoptions=gtk.FILL)
-		self.__table_advanced.attach(self.__label_dictionary, 0, 1, 1, 2, xoptions=gtk.FILL)
-		self.__table_advanced.attach(self.__file_sample, 1, 5, 0, 1)
-		self.__table_advanced.attach(self.__file_dictionary, 1, 5, 1, 2)
-		self.__table_advanced.attach(self.__label_sentence_stats, 0, 1, 2, 3, xoptions=gtk.FILL)
-		self.__table_advanced.attach(self.__label_sentence_mean, 2, 3, 2, 3, xoptions=gtk.FILL)
-		self.__table_advanced.attach(self.__label_sentence_sigma, 4, 5, 2, 3, xoptions=gtk.FILL)
-		self.__table_advanced.attach(self.__spinbutton_sentence_mean, 1, 2, 2, 3)
-		self.__table_advanced.attach(self.__spinbutton_sentence_sigma, 3, 4, 2, 3)
-		self.__table_advanced.attach(self.__label_paragraph_stats, 0, 1, 3, 4, xoptions=gtk.FILL)
-		self.__table_advanced.attach(self.__label_paragraph_mean, 2, 3, 3, 4, xoptions=gtk.FILL)
-		self.__table_advanced.attach(self.__label_paragraph_sigma, 4, 5, 3, 4, xoptions=gtk.FILL)
-		self.__table_advanced.attach(self.__spinbutton_paragraph_mean, 1, 2, 3, 4)
-		self.__table_advanced.attach(self.__spinbutton_paragraph_sigma, 3, 4, 3, 4)
-		self.__table_advanced.attach(self.__alignment_reset_stats, 0, 5, 4, 5, xoptions=gtk.FILL)
-		self.__expander_advanced = gtk.Expander("<b>Advanced options</b>")
-		self.__expander_advanced.set_use_markup(True)
-		self.__expander_advanced.add(self.__table_advanced)
+        # Determine default file paths
+        sample = None
+        dictionary = None
+        for pre in ['./', prefix + '/share/lorem-ipsum-generator/']:
+            trial = abspath(pre + 'sample.txt')
+            if not sample and exists(trial):
+                sample = trial
+            trial = abspath(pre + 'dictionary.txt')
+            if not dictionary and exists(trial):
+                dictionary = trial
+        # Advanced options
+        self.__label_sample = gtk.Label("Sample text")
+        self.__label_sample.set_alignment(0, 0.5)
+        self.__file_sample = gtk.FileChooserButton("Sample text")
+        self.__file_sample.connect('selection-changed', self.__set_sample)
+        self.__file_sample.set_filename(abspath(sample))
+        #self.__file_sample.set_tooltip_text('Set the sample file the generated text is based on.')
+        self.__label_dictionary = gtk.Label("Dictionary text")
+        self.__label_dictionary.set_alignment(0, 0.5)
+        self.__file_dictionary = gtk.FileChooserButton("Dictionary text")
+        self.__file_dictionary.connect('selection-changed', self.__set_dictionary)
+        self.__file_dictionary.set_filename(abspath(dictionary))
+        #self.__file_dictionary.set_tooltip_text('Set the file containig the words the generated text consists of.')
+        self.__label_sentence_stats = gtk.Label("Sentence length")
+        self.__label_sentence_mean = gtk.Label("mean")
+        self.__label_sentence_sigma = gtk.Label("standard deviation")
+        self.__label_sentence_stats.set_alignment(0, 0.5)
+        self.__spinbutton_sentence_mean = gtk.SpinButton()
+        self.__spinbutton_sentence_mean.set_range(0, 999)
+        self.__spinbutton_sentence_mean.set_increments(0.1, 1)
+        self.__spinbutton_sentence_mean.set_width_chars(4)
+        self.__spinbutton_sentence_mean.set_value(0)
+        self.__spinbutton_sentence_mean.set_digits(2)
+        #self.__spinbutton_sentence_mean.set_tooltip_text('Set the mean length of the randomly generated sentences, in words.')
+        self.__spinbutton_sentence_mean.connect('changed', self.__set_sentence_mean)
+        self.__spinbutton_sentence_sigma = gtk.SpinButton()
+        self.__spinbutton_sentence_sigma.set_range(0, 999)
+        self.__spinbutton_sentence_sigma.set_increments(0.1, 1)
+        self.__spinbutton_sentence_sigma.set_width_chars(4)
+        self.__spinbutton_sentence_sigma.set_value(0)
+        self.__spinbutton_sentence_sigma.set_digits(2)
+        #self.__spinbutton_sentence_sigma.set_tooltip_text('Set the standard deviation of the lengths of the randomly generated sentences, in words.')
+        self.__spinbutton_sentence_sigma.connect('changed', self.__set_sentence_sigma)
+        self.__label_paragraph_stats = gtk.Label("Paragraph length")
+        self.__label_paragraph_mean = gtk.Label("mean")
+        self.__label_paragraph_sigma = gtk.Label("standard deviation")
+        self.__label_paragraph_stats.set_alignment(0, 0.5)
+        self.__spinbutton_paragraph_mean = gtk.SpinButton()
+        self.__spinbutton_paragraph_mean.set_range(0, 999)
+        self.__spinbutton_paragraph_mean.set_increments(0.1, 1)
+        self.__spinbutton_paragraph_mean.set_width_chars(4)
+        self.__spinbutton_paragraph_mean.set_value(0)
+        self.__spinbutton_paragraph_mean.set_digits(2)
+        #self.__spinbutton_paragraph_mean.set_tooltip_text('Set the mean length of the randomly generated paragraphs, in sentences.')
+        self.__spinbutton_paragraph_mean.connect('changed', self.__set_paragraph_mean)
+        self.__spinbutton_paragraph_sigma = gtk.SpinButton()
+        self.__spinbutton_paragraph_sigma.set_range(0, 999)
+        self.__spinbutton_paragraph_sigma.set_increments(0.1, 1)
+        self.__spinbutton_paragraph_sigma.set_width_chars(4)
+        self.__spinbutton_paragraph_sigma.set_value(0)
+        self.__spinbutton_paragraph_sigma.set_digits(2)
+        #self.__spinbutton_paragraph_sigma.set_tooltip_text('Set the standard deviation of the lengths of the randomly generated paragraphs, in sentences.')
+        self.__spinbutton_paragraph_sigma.connect('changed', self.__set_paragraph_sigma)
+        self.__button_reset_stats = gtk.Button(label='Reset statistics')
+        reset_image = gtk.image_new_from_stock('gtk-clear', gtk.ICON_SIZE_BUTTON)
+        self.__button_reset_stats.set_image(reset_image)
+        self.__button_reset_stats.connect('clicked', self.__reset_statistics)
+        self.__button_reset_stats.set_alignment(1.0, 0.5)
+        self.__alignment_reset_stats = gtk.Alignment(1.0)
+        self.__alignment_reset_stats.add(self.__button_reset_stats)
+        self.__table_advanced = gtk.Table(5, 4, False)
+        self.__table_advanced.set_row_spacings(6)
+        self.__table_advanced.set_col_spacings(6)
+        self.__table_advanced.attach(self.__label_sample, 0, 1, 0, 1, xoptions=gtk.FILL)
+        self.__table_advanced.attach(self.__label_dictionary, 0, 1, 1, 2, xoptions=gtk.FILL)
+        self.__table_advanced.attach(self.__file_sample, 1, 5, 0, 1)
+        self.__table_advanced.attach(self.__file_dictionary, 1, 5, 1, 2)
+        self.__table_advanced.attach(self.__label_sentence_stats, 0, 1, 2, 3, xoptions=gtk.FILL)
+        self.__table_advanced.attach(self.__label_sentence_mean, 2, 3, 2, 3, xoptions=gtk.FILL)
+        self.__table_advanced.attach(self.__label_sentence_sigma, 4, 5, 2, 3, xoptions=gtk.FILL)
+        self.__table_advanced.attach(self.__spinbutton_sentence_mean, 1, 2, 2, 3)
+        self.__table_advanced.attach(self.__spinbutton_sentence_sigma, 3, 4, 2, 3)
+        self.__table_advanced.attach(self.__label_paragraph_stats, 0, 1, 3, 4, xoptions=gtk.FILL)
+        self.__table_advanced.attach(self.__label_paragraph_mean, 2, 3, 3, 4, xoptions=gtk.FILL)
+        self.__table_advanced.attach(self.__label_paragraph_sigma, 4, 5, 3, 4, xoptions=gtk.FILL)
+        self.__table_advanced.attach(self.__spinbutton_paragraph_mean, 1, 2, 3, 4)
+        self.__table_advanced.attach(self.__spinbutton_paragraph_sigma, 3, 4, 3, 4)
+        self.__table_advanced.attach(self.__alignment_reset_stats, 0, 5, 4, 5, xoptions=gtk.FILL)
+        self.__expander_advanced = gtk.Expander("<b>Advanced options</b>")
+        self.__expander_advanced.set_use_markup(True)
+        self.__expander_advanced.add(self.__table_advanced)
 
-		# Main window / vbox
-		self.__vbox_main = gtk.VBox(spacing=12)
-		self.__vbox_main.add(self.__frame_output)
-		self.__vbox_main.set_child_packing(self.__frame_output, True, True, 0, gtk.PACK_START)
-		self.__vbox_main.add(self.__hbox_options)
-		self.__vbox_main.set_child_packing(self.__hbox_options, False, True, 0, gtk.PACK_START)
-		self.__vbox_main.add(self.__expander_advanced)
-		self.__vbox_main.set_child_packing(self.__expander_advanced, False, True, 0, gtk.PACK_START)
-		self.__vbox_main.add(self.__hbox_actions)
-		self.__vbox_main.set_child_packing(self.__hbox_actions, False, True, 0, gtk.PACK_START)
-		self.__vbox_main.set_border_width(12)
-		self.__vbox_main.set_focus_chain((self.__hbox_options, self.__hbox_actions, self.__frame_output))
+        # Main window / vbox
+        self.__vbox_main = gtk.VBox(spacing=12)
+        self.__vbox_main.add(self.__frame_output)
+        self.__vbox_main.set_child_packing(self.__frame_output, True, True, 0, gtk.PACK_START)
+        self.__vbox_main.add(self.__hbox_options)
+        self.__vbox_main.set_child_packing(self.__hbox_options, False, True, 0, gtk.PACK_START)
+        self.__vbox_main.add(self.__expander_advanced)
+        self.__vbox_main.set_child_packing(self.__expander_advanced, False, True, 0, gtk.PACK_START)
+        self.__vbox_main.add(self.__hbox_actions)
+        self.__vbox_main.set_child_packing(self.__hbox_actions, False, True, 0, gtk.PACK_START)
+        self.__vbox_main.set_border_width(12)
+        self.__vbox_main.set_focus_chain((self.__hbox_options, self.__hbox_actions, self.__frame_output))
 
-		self.__window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-		self.__window.set_title("Lorem ipsum generator")
-		self.__window.connect('destroy', self.__destroy)
-		self.__window.add(self.__vbox_main)
-		self.__window.show_all()
+        self.__window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+        self.__window.set_title("Lorem ipsum generator")
+        self.__window.connect('destroy', self.__destroy)
+        self.__window.add(self.__vbox_main)
+        self.__window.show_all()
 
-		self.__clipboard = gtk.Clipboard()
-	
-	def main(self):
-		gtk.main()
+        self.__clipboard = gtk.Clipboard()
+    
+    def main(self):
+        gtk.main()
 
-	def __destroy(self, widget, data=None):
-		gtk.main_quit()
-	
-	def __copy_output(self, widget, data=None):
-		self.__clipboard.set_text(
-				self.__textbuffer_output.get_text(
-					self.__textbuffer_output.get_start_iter(),
-					self.__textbuffer_output.get_end_iter()
-					)
-				)
-	
-	def __copyexit_output(self, widget, data=None):
-		self.__copy_output(widget, data)
-		self.__destroy(widget, data)
+    def __destroy(self, widget, data=None):
+        gtk.main_quit()
+    
+    def __copy_output(self, widget, data=None):
+        self.__clipboard.set_text(
+                self.__textbuffer_output.get_text(
+                    self.__textbuffer_output.get_start_iter(),
+                    self.__textbuffer_output.get_end_iter()
+                    )
+                )
+    
+    def __copyexit_output(self, widget, data=None):
+        self.__copy_output(widget, data)
+        self.__destroy(widget, data)
 
-	def __generate_output(self, widget, data=None):
-		def idle_cb():
-			quantity = self.__spinbutton_quantity.get_value_as_int()
-			start_with_lorem = self.__checkbutton_startwithlorem.get_active()
-			paragraphs = self.__radiobutton_quantity_paragraphs.get_active()
-			sentences = self.__radiobutton_quantity_sentences.get_active()
-			html = self.__checkbutton_html.get_active()
+    def __generate_output(self, widget, data=None):
+        def idle_cb():
+            quantity = self.__spinbutton_quantity.get_value_as_int()
+            start_with_lorem = self.__checkbutton_startwithlorem.get_active()
+            paragraphs = self.__radiobutton_quantity_paragraphs.get_active()
+            sentences = self.__radiobutton_quantity_sentences.get_active()
+            html_paragraphs = self.__radiobutton_format_paragraphs.get_active()
+            html_list = self.__radiobutton_format_list.get_active()
 
-			text = ""
+            text = ""
 
-			try:
-				if paragraphs:
-					if html:
-						text = self.__generator.generate_html_paragraphs(
-								quantity = quantity,
-								start_with_lorem = start_with_lorem
-								)
-					else:
-						text = self.__generator.generate_text_paragraphs(
-								quantity = quantity,
-								start_with_lorem = start_with_lorem
-								)
-				elif sentences:
-					text = self.__generator.generate_text_sentences(
-							quantity = quantity,
-							start_with_lorem = start_with_lorem
-							)
-				
-				self.__textbuffer_output.set_text(text)
-			except lipsum.NoChains, e:
-				self.__error('Sample text required', e.__str__())
-			except lipsum.NoDictionary, e:
-				self.__error('Dictionary text required', e.__str__())
+            try:
+                if paragraphs:
+                    if html_paragraphs:
+                        text = self.__generator.generate_html_paragraphs(
+                                quantity = quantity,
+                                start_with_lorem = start_with_lorem
+                                )
+                    elif html_list:
+                        text = self.__generator.generate_html_paragraph_list(
+                                quantity = quantity,
+                                start_with_lorem = start_with_lorem
+                                )
+                    else:
+                        text = self.__generator.generate_text_paragraphs(
+                                quantity = quantity,
+                                start_with_lorem = start_with_lorem
+                                )
+                elif sentences:
+                    if html_paragraphs:
+                        text = self.__generator.generate_html_sentences(
+                                quantity = quantity,
+                                start_with_lorem = start_with_lorem
+                                )
+                    elif html_list:
+                        text = self.__generator.generate_html_sentence_list(
+                                quantity = quantity,
+                                start_with_lorem = start_with_lorem
+                                )
+                    else:
+                        text = self.__generator.generate_text_sentences(
+                                quantity = quantity,
+                                start_with_lorem = start_with_lorem
+                                )
+                
+                self.__textbuffer_output.set_text(text)
+            except lipsum.NoChains, e:
+                self.__error('Sample text required', e.__str__())
+            except lipsum.NoDictionary, e:
+                self.__error('Dictionary text required', e.__str__())
 
-			self.__window.window.set_cursor(None)
+            self.__window.window.set_cursor(None)
 
-		self.__window.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.WATCH))
-		gobject.idle_add(idle_cb)
+        self.__window.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.WATCH))
+        gobject.idle_add(idle_cb)
 
-	def __set_sample(self, widget, data=None):
-		try:
-			filename = self.__file_sample.get_filename()
-			if filename:
-				sample = self.__load_contents(filename)
-				try:
-					self.__generator.set_sample(sample)
-					self.__old_sample = filename
-					self.__update_statistic_fields()
-				except lipsum.InvalidSampleText, e:
-					self.__error('Invalid sample text', e.__str__())
-					if self.__old_sample != filename and self.__old_sample != None:
-						self.__file_sample.set_filename(self.__old_sample)
-		except IOError:
-			self.__ioerror(filename)
-			if self.__old_sample != filename and self.__old_sample != None:
-				self.__file_sample.set_filename(self.__old_sample)
+    def __set_sample(self, widget, data=None):
+        try:
+            filename = self.__file_sample.get_filename()
+            if filename:
+                sample = self.__load_contents(filename)
+                try:
+                    self.__generator.set_sample(sample)
+                    self.__old_sample = filename
+                    self.__update_statistic_fields()
+                except lipsum.InvalidSampleText, e:
+                    self.__error('Invalid sample text', e.__str__())
+                    if self.__old_sample != filename and self.__old_sample != None:
+                        self.__file_sample.set_filename(self.__old_sample)
+        except IOError:
+            self.__ioerror(filename)
+            if self.__old_sample != filename and self.__old_sample != None:
+                self.__file_sample.set_filename(self.__old_sample)
 
-	def __update_statistic_fields(self):
-		self.__spinbutton_sentence_mean.set_value(self.__generator.get_sentence_mean())
-		self.__spinbutton_sentence_sigma.set_value(self.__generator.get_sentence_sigma())
-		self.__spinbutton_paragraph_mean.set_value(self.__generator.get_paragraph_mean())
-		self.__spinbutton_paragraph_sigma.set_value(self.__generator.get_paragraph_sigma())
+    def __update_statistic_fields(self):
+        self.__spinbutton_sentence_mean.set_value(self.__generator.get_sentence_mean())
+        self.__spinbutton_sentence_sigma.set_value(self.__generator.get_sentence_sigma())
+        self.__spinbutton_paragraph_mean.set_value(self.__generator.get_paragraph_mean())
+        self.__spinbutton_paragraph_sigma.set_value(self.__generator.get_paragraph_sigma())
 
-	def __set_dictionary(self, widget, data=None):
-		try:
-			filename = self.__file_dictionary.get_filename()
-			if filename:
-				dictionary = self.__load_contents(filename)
-				try:
-					self.__generator.set_dictionary(dictionary)
-					self.__old_dictionary = filename
-				except lipsum.InvalidDictionaryText, e:
-					self.__error('Invalid dictionary text', e.__str__())
-					if self.__old_dictionary != filename and self.__old_dictionary != None:
-						self.__file_dictionary.set_filename(self.__old_dictionary)
-		except IOError:
-			self.__ioerror(filename)
-			if self.__old_dictionary != filename and self.__old_dictionary != None:
-				self.__file_dictionary.set_filename(self.__old_dictionary)
+    def __set_dictionary(self, widget, data=None):
+        try:
+            filename = self.__file_dictionary.get_filename()
+            if filename:
+                dictionary = self.__load_contents(filename)
+                try:
+                    self.__generator.set_dictionary(dictionary)
+                    self.__old_dictionary = filename
+                except lipsum.InvalidDictionaryText, e:
+                    self.__error('Invalid dictionary text', e.__str__())
+                    if self.__old_dictionary != filename and self.__old_dictionary != None:
+                        self.__file_dictionary.set_filename(self.__old_dictionary)
+        except IOError:
+            self.__ioerror(filename)
+            if self.__old_dictionary != filename and self.__old_dictionary != None:
+                self.__file_dictionary.set_filename(self.__old_dictionary)
 
-	def __error(self, title, message):
-		error = gtk.MessageDialog(
-				type=gtk.MESSAGE_ERROR,
-				message_format = title,
-				buttons=gtk.BUTTONS_OK
-				)
+    def __error(self, title, message):
+        error = gtk.MessageDialog(
+                type=gtk.MESSAGE_ERROR,
+                message_format = title,
+                buttons=gtk.BUTTONS_OK
+                )
 
-		def close_error(widget, data=None):
-			widget.destroy()
-		
-		error.format_secondary_markup(message)
-		error.connect('response', close_error)
-		error.show()
+        def close_error(widget, data=None):
+            widget.destroy()
+        
+        error.format_secondary_markup(message)
+        error.connect('response', close_error)
+        error.show()
 
-	def __ioerror(self, filename):
-		self.__error('Missing data files', 'The following file could not be found: <b>%s</b>' % filename)
+    def __ioerror(self, filename):
+        self.__error('Missing data files', 'The following file could not be found: <b>%s</b>' % filename)
 
-	def __set_sentence_mean(self, widget, data=None):
-		mean = self.__spinbutton_sentence_mean.get_value()
-		self.__generator.set_sentence_mean(mean)
+    def __set_sentence_mean(self, widget, data=None):
+        mean = self.__spinbutton_sentence_mean.get_value()
+        self.__generator.set_sentence_mean(mean)
 
-	def __set_sentence_sigma(self, widget, data=None):
-		sigma = self.__spinbutton_sentence_sigma.get_value()
-		self.__generator.set_sentence_sigma(sigma)
+    def __set_sentence_sigma(self, widget, data=None):
+        sigma = self.__spinbutton_sentence_sigma.get_value()
+        self.__generator.set_sentence_sigma(sigma)
 
-	def __set_paragraph_mean(self, widget, data=None):
-		mean = self.__spinbutton_paragraph_mean.get_value()
-		self.__generator.set_paragraph_mean(mean)
+    def __set_paragraph_mean(self, widget, data=None):
+        mean = self.__spinbutton_paragraph_mean.get_value()
+        self.__generator.set_paragraph_mean(mean)
 
-	def __set_paragraph_sigma(self, widget, data=None):
-		sigma = self.__spinbutton_paragraph_sigma.get_value()
-		self.__generator.set_paragraph_sigma(sigma)
-	
-	def __reset_statistics(self, widget, data=None):
-		self.__generator.reset_statistics()
-		self.__update_statistic_fields()
+    def __set_paragraph_sigma(self, widget, data=None):
+        sigma = self.__spinbutton_paragraph_sigma.get_value()
+        self.__generator.set_paragraph_sigma(sigma)
+    
+    def __reset_statistics(self, widget, data=None):
+        self.__generator.reset_statistics()
+        self.__update_statistic_fields()
 
 if __name__ == "__main__":
-	main = Main()
-	main.main()
+    main = Main()
+    main.main()
