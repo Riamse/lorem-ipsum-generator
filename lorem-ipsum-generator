@@ -364,7 +364,7 @@ class Main:
             if filename:
                 sample = self.__load_contents(filename)
                 try:
-                    self.__generator.set_sample(sample)
+                    self.__generator.sample = sample
                     self.__old_sample = filename
                     self.__update_statistic_fields()
                 except lipsum.InvalidSampleText, e:
@@ -377,10 +377,10 @@ class Main:
                 self.__file_sample.set_filename(self.__old_sample)
 
     def __update_statistic_fields(self):
-        self.__spinbutton_sentence_mean.set_value(self.__generator.get_sentence_mean())
-        self.__spinbutton_sentence_sigma.set_value(self.__generator.get_sentence_sigma())
-        self.__spinbutton_paragraph_mean.set_value(self.__generator.get_paragraph_mean())
-        self.__spinbutton_paragraph_sigma.set_value(self.__generator.get_paragraph_sigma())
+        self.__spinbutton_sentence_mean.set_value(self.__generator.sentence_mean)
+        self.__spinbutton_sentence_sigma.set_value(self.__generator.sentence_sigma)
+        self.__spinbutton_paragraph_mean.set_value(self.__generator.paragraph_mean)
+        self.__spinbutton_paragraph_sigma.set_value(self.__generator.paragraph_sigma)
 
     def __set_dictionary(self, widget, data=None):
         try:
@@ -388,7 +388,7 @@ class Main:
             if filename:
                 dictionary = self.__load_contents(filename)
                 try:
-                    self.__generator.set_dictionary(dictionary)
+                    self.__generator.dictionary = dictionary
                     self.__old_dictionary = filename
                 except lipsum.InvalidDictionaryText, e:
                     self.__error('Invalid dictionary text', e.__str__())
@@ -418,19 +418,19 @@ class Main:
 
     def __set_sentence_mean(self, widget, data=None):
         mean = self.__spinbutton_sentence_mean.get_value()
-        self.__generator.set_sentence_mean(mean)
+        self.__generator.sentence_mean = mean
 
     def __set_sentence_sigma(self, widget, data=None):
         sigma = self.__spinbutton_sentence_sigma.get_value()
-        self.__generator.set_sentence_sigma(sigma)
+        self.__generator.sentence_sigma = sigma
 
     def __set_paragraph_mean(self, widget, data=None):
         mean = self.__spinbutton_paragraph_mean.get_value()
-        self.__generator.set_paragraph_mean(mean)
+        self.__generator.paragraph_mean = mean
 
     def __set_paragraph_sigma(self, widget, data=None):
         sigma = self.__spinbutton_paragraph_sigma.get_value()
-        self.__generator.set_paragraph_sigma(sigma)
+        self.__generator.paragraph_sigma = sigma
     
     def __reset_statistics(self, widget, data=None):
         self.__generator.reset_statistics()

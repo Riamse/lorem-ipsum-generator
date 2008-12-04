@@ -169,6 +169,14 @@ class Generator(object):
     __paragraph_mean        = 0
     __paragraph_sigma       = 0
     
+    __generatedsentence_mean    = 0
+    __generatedsentence_sigma   = 0
+    __generatedparagraph_mean   = 0
+    __generatedparagraph_sigma  = 0
+
+    __sample                = ''
+    __dictionary            = ''
+
     def __init__(self, sample=DEFAULT_SAMPLE, dictionary=DEFAULT_DICT):
         """
         Initialises a lorem ipsum generator by performing ahead of time 
@@ -192,10 +200,10 @@ class Generator(object):
         and are case-insensitive.
         """
         
-        self.set_dictionary(dictionary)
-        self.set_sample(sample)
+        self.dictionary = dictionary
+        self.sample = sample
 
-    def set_sentence_mean(self, mean):
+    def __set_sentence_mean(self, mean):
         """
         Sets the mean length of the randomly generated sentences. 
         Quantities are in number of words.
@@ -206,7 +214,7 @@ class Generator(object):
 
         self.__sentence_mean = mean
     
-    def set_sentence_sigma(self, sigma):
+    def __set_sentence_sigma(self, sigma):
         """
         Sets the standard deviation of the lengths of the randomly 
         generated sentences. Quantities are in number of words.
@@ -216,7 +224,7 @@ class Generator(object):
 
         self.__sentence_sigma = sigma
     
-    def set_paragraph_mean(self, mean):
+    def __set_paragraph_mean(self, mean):
         """
         Sets the mean length of the randomly generated paragraphs. 
         Quantities are in number of sentences.
@@ -227,7 +235,7 @@ class Generator(object):
 
         self.__paragraph_mean = mean
 
-    def set_paragraph_sigma(self, sigma):
+    def __set_paragraph_sigma(self, sigma):
         """
         Sets the standard deviation of the lengths of the randomly
         generated sentences. Quantities are in number of sentences.
@@ -238,27 +246,31 @@ class Generator(object):
 
         self.__paragraph_sigma = sigma
 
-    def get_sentence_mean(self):
+    def __get_sentence_mean(self):
         return self.__sentence_mean
 
-    def get_sentence_sigma(self):
+    def __get_sentence_sigma(self):
         return self.__sentence_sigma
 
-    def get_paragraph_mean(self):
+    def __get_paragraph_mean(self):
         return self.__paragraph_mean
 
-    def get_paragraph_sigma(self):
+    def __get_paragraph_sigma(self):
         return self.__paragraph_sigma
     
-    def set_dictionary(self, dictionary):
+    def __set_dictionary(self, dictionary):
         """
         Sets the dictionary of words used to generate output. Accepts
         a string containing case-insensitive, white-space delimited 
         words.
         """
 
+        self.__dictionary = dictionary
         words = dictionary.split()
         self.__generate_dictionary(words)
+
+    def __get_dictionary(self):
+        return self.__dictionary
     
     def __generate_dictionary(self, words):
         dictionary = {}
@@ -276,7 +288,7 @@ class Generator(object):
         else:
             raise InvalidDictionaryText
 
-    def set_sample(self, sample):
+    def __set_sample(self, sample):
         """
         Sets the sample text to calculate the word distribution to
         be used by the generated lorem ipsum text. 
@@ -289,8 +301,12 @@ class Generator(object):
         Paragraphs are separated by empty lines.
         """
 
+        self.__sample = sample
         self.__generate_chains(sample)
         self.__generate_statistics(sample)
+
+    def __get_sample(self):
+        return self.__sample
     
     def __generate_chains(self, sample):
         words = sample.split()
@@ -517,6 +533,14 @@ class Generator(object):
             return dictionary[above]
         else:
             return dictionary[below]
+    
+    sentence_mean           = property(__get_sentence_mean, __set_sentence_mean)
+    sentence_sigma          = property(__get_sentence_sigma, __set_sentence_sigma)
+    paragraph_mean          = property(__get_paragraph_mean, __set_paragraph_mean)
+    paragraph_sigma         = property(__get_paragraph_sigma, __set_paragraph_sigma)
+    
+    sample                  = property(__get_sample, __set_sample)
+    dictionary              = property(__get_dictionary, __set_dictionary)
 
 class MarkupGenerator(Generator):
     """
