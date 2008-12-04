@@ -1,24 +1,3 @@
-# -*- coding: utf-8 -*-
-# Copyright:
-#   James Hales, 2007. <jhales.perth@gmail.com>,
-#   Zachary Voase, 2008. <zack@biga.mp>
-#
-# This file is part of the Lorem Ipsum Generator.
-# 
-# The Lorem Ipsum Generator is free software: you can redistribute it 
-# and/or modify it under the terms of the GNU General Public License 
-# as published by the Free Software Foundation, either version 3 of 
-# the License, or (at your option) any later version.
-# 
-# The Lorem Ipsum generator is distributed in the hope that it will 
-# be useful, but WITHOUT ANY WARRANTY; without even the implied 
-# warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
-# See the GNU General Public License for more details.
-# 
-# You should have received a copy of the GNU General Public License
-# along with the Lorem Ipsum Generator.  If not, 
-# see <http://www.gnu.org/licenses/>.
-
 from cStringIO import StringIO
 import base64
 import gzip
