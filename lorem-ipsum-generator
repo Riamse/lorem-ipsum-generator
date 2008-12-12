@@ -99,10 +99,40 @@ class LipsumGUI:
         self.__main.destroy()
 
     def __set_sample_file(self, w):
-        pass
+        filename = self.__filechooserbutton_sample.get_filename()
+        if filename:
+            try:
+                sample = load_contents(filename)
+            except IOError:
+                self.__ioerror(filename)
+            self.__generator.sample = sample
+            self.__update_statistic_fields()
 
     def __set_dictionary_file(self, w):
-        pass
+        filename = self.__filechooserbutton_dictionary.get_filename()
+        if filename:
+            try:
+                dictionary = load_contents(filename)
+            except IOError:
+                self.__ioerror(filename)
+            self.__generator.dictionary = dictionary
+
+	def __error(self, title, message):
+		error = gtk.MessageDialog(
+				type=gtk.MESSAGE_ERROR,
+				message_format = title,
+				buttons=gtk.BUTTONS_OK
+				)
+
+		def close_error(widget, data=None):
+			widget.destroy()
+		
+		error.format_secondary_markup(message)
+		error.connect('response', close_error)
+		error.show()
+
+	def __ioerror(self, filename):
+		self.__error('Missing data files', 'The following file could not be found: <b>%s</b>' % filename)
 
     def __set_sentence_mean(self, w):
         self.__generator.sentence_mean = self.__spinbutton_sentence_mean.get_value()
@@ -126,6 +156,12 @@ class LipsumGUI:
         self.__spinbutton_sentence_sigma.set_value(self.__generator.sentence_sigma)
         self.__spinbutton_paragraph_mean.set_value(self.__generator.paragraph_mean)
         self.__spinbutton_paragraph_sigma.set_value(self.__generator.paragraph_sigma)
+
+def load_contents(file):
+    file = open(file, 'r')
+    contents = file.read()
+    file.close()
+    return contents
 
 def main():
     (options, args) = parse_args()
