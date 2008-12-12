@@ -6,10 +6,9 @@ import os
 import random
 import re
 
-
 NEWLINE = os.linesep
 
-
+# Contains a reasonable default sample text
 DEFAULT_SAMPLE_COMPRESSED = """
 H4sIAFEGLkkC/7Va244ktw1976/QBxTmB/Jk2AlgIAkcBPa7pko7o6Au7SqpAf99SB6SYu
 0ukJcYsHdnuqskijw8PKT278dZtlSfV9/ScqzHma7aUt5Km9J87FeZW2m9nCkv9Vmvue4f
@@ -73,6 +72,7 @@ b+liqwnQATpJoPFrVIJcjtEAXCMdB/WZlTfpPRJaISbr8+bKMfYWoUGolCwUWvL7oHEjaL
 MF0LwBHy5i5No3XtFQOkK/jzYsaAQrutD8Iy+9giuVPP4LRlLv+LckAAA=
 """
 
+# Contains a reasonable default latin dictionary
 DEFAULT_DICT_COMPRESSED = """
 H4sIABkJLkkC/z2U667lIAiF//OWVtndTLz0oDaZt5+P9mQShaVFXFxskpQZebeZuqTCsM
 tmtn5K0q6xWe1np/ZqXZJaiL5U0rW0gz1vSeid13DUuVUOO7SX3eSoqRdbkmuaU/JobZSB
@@ -90,7 +90,6 @@ Z52/wAJRKtlL7uSG41sZ30hAAtSY0LqJKKoV32cUrZKRm/eEtd0pugqtTv3uUfe6qNq967
 UXlZN/dPUXs0IFAAA=
 """
 
-
 sample_text_file = gzip.GzipFile(mode='rb',
     fileobj=StringIO(base64.b64decode(DEFAULT_SAMPLE_COMPRESSED)))
 DEFAULT_SAMPLE = sample_text_file.read()
@@ -101,13 +100,13 @@ dictionary_text_file = gzip.GzipFile(mode='rb',
 DEFAULT_DICT = dictionary_text_file.read()
 dictionary_text_file.close()
 
-class InvalidDictionaryText(Exception):
+class InvalidDictionaryTextError(Exception):
     def __str__(self):
         return ('Dictionary text must contain one or more white-space '
             'delimited words.')
 
 
-class InvalidSampleText(Exception):
+class InvalidSampleTextError(Exception):
     def __str__(self):
         return ('Sample text must contain one or more empty-line '
             'delimited paragraphs, and each paragraph must contain one or '
@@ -115,16 +114,17 @@ class InvalidSampleText(Exception):
             'sentences.')
 
 
-class NoDictionary(Exception):
+class NoDictionaryError(Exception):
     def __str__(self):
         return ('No words stored in generator. A valid dictionary text must '
             'be supplied.')
 
 
-class NoChains(Exception):
+class NoChainsError(Exception):
     def __str__(self):
         return ('No chains stored in generator. A valid sample text must be '
             'supplied.')
+
 
 class Generator(object):
     """
@@ -132,163 +132,162 @@ class Generator(object):
     distribution of a given sample text, using the words in a given 
     dictionary.
     """
+    # Delimiters that mark ends of sentences
+    __delimiters_sentences = ['.', '?', '!']
 
-    # Configuration variables
-    __delimiters_sentences  = ['.', '?', '!']
-    __delimiters_words      = [','] + __delimiters_sentences
-
-    # Markov chain statistics (generated)
-    __chains                = {}
-    __chains_starts         = []
-    __chains_dictionary     = {}
-
-    # Sentence / paragraph statistics
-    __sentence_mean         = 0
-    __sentence_sigma        = 0
-    __paragraph_mean        = 0
-    __paragraph_sigma       = 0
+    # Delimiters which do not form parts of words (i.e. "hello," is the word 
+    # "hello" with a comma next to it)
+    __delimiters_words = [','] + __delimiters_sentences
     
-    __generatedsentence_mean    = 0
-    __generatedsentence_sigma   = 0
-    __generatedparagraph_mean   = 0
-    __generatedparagraph_sigma  = 0
+    # Markov chain statistics
+    __chains = {}
+    __chains_starts = []
+    __chains_dictionary = {}
 
-    __sample                = ''
-    __dictionary            = ''
+    # Stored sample / dictionary values
+    __sample = ""
+    __dictionary = ""
 
-    def __init__(self, sample=DEFAULT_SAMPLE, dictionary=DEFAULT_DICT):
+    # Statistics for sentence and paragraph generation
+    __sentence_mean = 0
+    __sentence_sigma = 0
+    __paragraph_mean = 0
+    __paragraph_sigma = 0
+
+    # Last calculated statistics, in case they are overwritten by user
+    __generated_sentence_mean = 0
+    __generated_sentence_sigma = 0
+    __generated_paragraph_mean = 0
+    __generated_paragraph_sigma = 0
+
+    def generate_sentence(self, start_with_lorem=False):
         """
-        Initialises a lorem ipsum generator by performing ahead of time 
-        the calculations required by all "generations".
+        Generates a single sentence, of random length.
 
-        Requires two strings containing a sample text and a dictionary 
-        text.
-
-        Sample text:
-        The sample text is used to calculate the word distribution to
-        be used by the generated lorem ipsum text. Sentences are 
-        separated by periods, question marks or exclamation makrs. 
-        Commas are included in the generated lorem ipsum text according 
-        to their distribution in the sample text. All other punctuation 
-        marks should ideally be removed, or else they will be counted 
-        as parts of words. Paragraphs are separated by empty lines.
-
-        Dictionary text:
-        The dictionary text is used as the list of words to use in the
-        generated lorem ipsum text. Words are separated by white space,
-        and are case-insensitive.
+        If start_with_lorem=True, then the sentence will begin with the
+        standard "Lorem ipsum..." first sentence.
         """
-        
-        self.dictionary = dictionary
-        self.sample = sample
+        if len(self.__chains) == 0 or len(self.__chains_starts) == 0:
+            raise NoChainsError
 
-    def __set_sentence_mean(self, mean):
-        """
-        Sets the mean length of the randomly generated sentences. 
-        Quantities are in number of words.
-        """
+        if len(self.__chains_dictionary) == 0:
+            raise NoDictionaryError
 
-        if mean < 0:
-            raise ValueError('Mean sentence length must be non-negative.')
+        # The length of the sentence is a normally distributed random variable.
+        sentence_length = random.normalvariate(self.__sentence_mean, \
+            self.__sentence_sigma)
+        sentence_length = max(int(round(sentence_length)), 1)
 
-        self.__sentence_mean = mean
-    
-    def __set_sentence_sigma(self, sigma):
-        """
-        Sets the standard deviation of the lengths of the randomly 
-        generated sentences. Quantities are in number of words.
-        """
-        if sigma < 0:
-            raise ValueError('Standard deviation of sentence length must be non-negative.')
+        sentence = []
+        previous = ()
 
-        self.__sentence_sigma = sigma
-    
-    def __set_paragraph_mean(self, mean):
-        """
-        Sets the mean length of the randomly generated paragraphs. 
-        Quantities are in number of sentences.
-        """
-        
-        if mean < 0:
-            raise ValueError('Mean paragraph length must be non-negative.')
+        word_delimiter = '' # Defined here in case while loop doesn't run
 
-        self.__paragraph_mean = mean
+        # Start the sentence with "Lorem ipsum...", if desired
+        if start_with_lorem:
+            lorem = "lorem ipsum dolor sit amet, consecteteur adipiscing elit"
+            lorem = lorem.split()
+            sentence += lorem[:sentence_length]
+            last_char = sentence[-1][-1]
+            if last_char not in self.__delimiters_sentences:
+                word_delimiter = last_char
 
-    def __set_paragraph_sigma(self, sigma):
-        """
-        Sets the standard deviation of the lengths of the randomly
-        generated sentences. Quantities are in number of sentences.
-        """
-        
-        if sigma < 0:
-            raise ValueError('Standard deviation of paragraph length must be non-negative.')
+        # Generate a sentence from the "chains"
+        while len(sentence) < sentence_length:
+            # If the current starting point is invalid, choose another randomly
+            while (not self.__chains.has_key(previous)):
+                previous = random.choice(self.__chains_starts)
 
-        self.__paragraph_sigma = sigma
+            # Choose the next "chain" to go to. This determines the next word 
+            # length we'll use, and whether there is e.g. a comma at the end of 
+            # the word.
+            chain = random.choice(self.__chains[previous])
+            word_length = chain[0]
+            
+            # If the word delimiter contained in the chain is also a sentence 
+            # delimiter, then we don't include it because we don't want the 
+            # sentence to end prematurely (we want the length to match the
+            # sentence_length value).
+            if chain[1] in self.__delimiters_sentences:
+                word_delimiter = ''
+            else:
+                word_delimiter = chain[1]
 
-    def __get_sentence_mean(self):
-        return self.__sentence_mean
-
-    def __get_sentence_sigma(self):
-        return self.__sentence_sigma
-
-    def __get_paragraph_mean(self):
-        return self.__paragraph_mean
-
-    def __get_paragraph_sigma(self):
-        return self.__paragraph_sigma
-    
-    def __set_dictionary(self, dictionary):
-        """
-        Sets the dictionary of words used to generate output. Accepts
-        a string containing case-insensitive, white-space delimited 
-        words.
-        """
-
-        self.__dictionary = dictionary
-        words = dictionary.split()
-        self.__generate_dictionary(words)
-
-    def __get_dictionary(self):
-        return self.__dictionary
-    
-    def __generate_dictionary(self, words):
-        dictionary = {}
-        for word in words:
+            # Choose a word randomly that matches (or closely matches) the 
+            # length we're after.
+            closest_length = self.__choose_closest(
+                    self.__chains_dictionary.keys(),
+                    word_length)
+            word = random.choice(self.__chains_dictionary[closest_length])
             word = word.lower()
-            length = len(word)
 
-            if not dictionary.has_key(length):
-                dictionary[length] = []
+            sentence += [word + word_delimiter]
+            previous = (previous[1], word_length)
 
-            dictionary[length] += [word]
+        # Finish the sentence off with capitalisation, a period and 
+        # form it into a string
+        sentence = ' '.join(sentence)
+        sentence = sentence.capitalize()
+        sentence = sentence.rstrip(word_delimiter) + '.'
 
-        if len(dictionary) > 0:
-            self.__chains_dictionary = dictionary
-        else:
-            raise InvalidDictionaryText
+        return sentence
+
+    def generate_paragraph(self, start_with_lorem=False):
+        """
+        Generates a single lorem ipsum paragraph, of random length.
+
+        If start_with_lorem=True, then the paragraph will begin with the
+        standard "Lorem ipsum..." first sentence.
+        """
+        paragraph = []
+
+        # The length of the paragraph is a normally distributed random variable.
+        paragraph_length = random.normalvariate(self.__paragraph_mean, \
+            self.__paragraph_sigma)
+        paragraph_length = max(int(round(paragraph_length)), 1)
+
+        # Construct a paragraph from a number of sentences.
+        while len(paragraph) < paragraph_length:
+            sentence = self.generate_sentence(
+                start_with_lorem = (start_with_lorem and len(paragraph) == 0)
+                )
+            paragraph += [sentence]
+
+        # Form the paragraph into a string.
+        paragraph = ' '.join(paragraph)
+
+        return paragraph
+    
+    def __choose_closest(self, values, target):
+        """
+        Find the number in the list of values that is closest to the target.
+        """
+        closest = values[0]
+        for value in values:
+            if abs(target - value) < abs(target - closest):
+                closest = value
+
+        return closest
 
     def __set_sample(self, sample):
-        """
-        Sets the sample text to calculate the word distribution to
-        be used by the generated lorem ipsum text. 
-        
-        Sentences in the supplied string are separated by periods, 
-        question marks or exclamation makrs.  Commas are included in
-        the generated lorem ipsum text according to their distribution 
-        in the sample text. All other punctuation marks should ideally 
-        be removed, or else they will be counted as parts of words. 
-        Paragraphs are separated by empty lines.
-        """
-
         self.__sample = sample
-        self.__generate_chains(sample)
-        self.__generate_statistics(sample)
+        self.__generate_chains()
+        self.__generate_statistics()
 
     def __get_sample(self):
+        """
+        The sample text is used to calculate the word distribution to be used
+        by the generated lorem ipsum text. Sentences are separated by periods,
+        question marks or exclamation marks. Commas are included in the 
+        generated lorem ipsum text according to their distribution in the 
+        sample text. All other punctuation marks should ideally be removed,
+        or else they will be interpreted incorrectly. Paragraphs are separated
+        by empty lines.
+        """
         return self.__sample
-    
-    def __generate_chains(self, sample):
-        words = sample.split()
+
+    def __generate_chains(self):
+        words = self.__sample.split()
         previous = (0, 0)
         chains = {}
         chains_starts = [previous]
@@ -299,11 +298,12 @@ class Generator(object):
 
             # If the word ends in a "word delimiter", strip it of
             # the character and record it
+            word_delimiter = ''
+
             if word[-1] in self.__delimiters_words:
                 word_delimiter = word[-1]
-                word = word.rstrip(word_delimiter)
-            else:
-                word_delimiter = ''
+            
+            word = word.rstrip(word_delimiter)
 
             chains.setdefault(previous, []).append(
                     (len(word), word_delimiter))
@@ -317,209 +317,172 @@ class Generator(object):
             self.__chains = chains
             self.__chains_starts = chains_starts
         else:
-            raise InvalidSampleText
+            raise InvalidSampleTextError
 
+    def __set_dictionary(self, dictionary):
+        self.__dictionary = dictionary
+        self.__generate_dictionary()
+
+    def __get_dictionary(self):
+        """
+        The dictionary text is used as the list of words to use in the 
+        generated lorem ipsum text. Words are separated by white space and are
+        case-insensitive.
+        """
+        return self.__dictionary
+
+    def __generate_dictionary(self):
+        words = self.__dictionary.split()
+        dictionary = {}
+        for word in words:
+            word = word.lower()
+            length = len(word)
+
+            if not dictionary.has_key(length):
+                dictionary[length] = []
+
+            dictionary[length] += [word]
+
+        if len(dictionary) > 0:
+            self.__chains_dictionary = dictionary
+        else:
+            raise InvalidDictionaryTextError
+
+    def __set_sentence_mean(self, mean):
+        if mean < 0:
+            raise ValueError('Mean sentence length must be non-negative.')
+        self.__sentence_mean = mean
+    
+    def __set_sentence_sigma(self, sigma):
+        if sigma < 0:
+            raise ValueError('Standard deviation of sentence length must be'
+                'non-negative.')
+        self.__sentence_sigma = sigma
+    
+    def __set_paragraph_mean(self, mean):
+        if mean < 0:
+            raise ValueError('Mean paragraph length must be non-negative.')
+        self.__paragraph_mean = mean
+
+    def __set_paragraph_sigma(self, sigma):
+        if sigma < 0:
+            raise ValueError('Standard deviation of paragraph length must be'
+                'non-negative.')
+        self.__paragraph_sigma = sigma
+
+    def __get_sentence_mean(self):
+        """
+        A non-negative value determining the mean sentence length (in words) 
+        of generated sentences. Is changed to match the sample text when the 
+        sample text is updated.
+        """
+        return self.__sentence_mean
+
+    def __get_sentence_sigma(self):
+        """
+        A non-negative value determining the standard deviation of sentence 
+        lengths (in words) of generated sentences. Is changed to match the 
+        sample text when the sample text is updated.
+        """
+        return self.__sentence_sigma
+
+    def __get_paragraph_mean(self):
+        """
+        A non-negative value determining the mean paragraph length (in 
+        sentences) of generated sentences. Is changed to match the sample text 
+        when the sample text is updated.
+        """
+        return self.__paragraph_mean
+
+    def __get_paragraph_sigma(self):
+        """
+        A non-negative value determining the standard deviation of paragraph 
+        lengths (in sentences) of generated sentences. Is changed to match the
+        sample text when the sample text is updated.
+        """
+        return self.__paragraph_sigma
+    
     def reset_statistics(self):
+        """
+        Returns the values of sentence_mean, sentence_sigma, paragraph_mean,
+        and paragraph_sigma to their values as calculated from the sample 
+        text.
+        """
         self.__sentence_mean = self.__generated_sentence_mean
         self.__sentence_sigma = self.__generated_sentence_sigma
         self.__paragraph_mean = self.__generated_paragraph_mean
         self.__paragraph_sigma = self.__generated_paragraph_sigma
-    
-    def __save_generated_statistics(self):
-        self.__generated_sentence_mean = self.__sentence_mean
-        self.__generated_sentence_sigma = self.__sentence_sigma
-        self.__generated_paragraph_mean = self.__paragraph_mean
-        self.__generated_paragraph_sigma = self.__paragraph_sigma
 
-    def __generate_statistics(self, sample):
-        self.__generate_sentence_statistics(sample)
-        self.__generate_paragraph_statistics(sample)
-        self.__save_generated_statistics()
+    def __generate_statistics(self):
+        self.__generate_sentence_statistics()
+        self.__generate_paragraph_statistics()
+        self.reset_statistics()
+
+    def __split_paragraphs(self, text):
+        text = text.replace('\r\n', '\n')
+        text = text.replace('\r', '\n')
+        text = text.replace('\n', NEWLINE)
+        paragraphs = text.split(NEWLINE * 2)
+        return paragraphs
 
     def __split_sentences(self, text):
         sentence_split = ''
         for delimiter in self.__delimiters_sentences:
             sentence_split += '\\' + delimiter
         sentence_split = '[' + sentence_split + ']'
-        text = re.split(sentence_split, text)
-        return text
+        sentences = re.split(sentence_split, text)
+        return sentences
 
+    def __split_words(self, text):
+        return text.split()
 
-    def __generate_sentence_statistics(self, sample):
-        # Split the sample into a list of sentences
-        sentences = self.__split_sentences(sample)
+    def __calculate_mean_sigma(self, values):
+        sum = 0.0
+        sumsq = 0.0
+        n = len(values)
 
-        # Analyse sentences
-        mean = 0.0
-        sigma = 0.0
-        n = 0
+        for value in values:
+            sum     += value
+            sumsq   += value ** 2
 
-        for sentence in sentences:
-            words = len(sentence.split())
-            if words > 0:
-                sigma += words**2
-                mean += words
-                n += 1
+        mean = sum / n
+        variance = sumsq / n - mean ** 2
+        sigma = math.sqrt(variance)
 
-        if n > 0:
-            mean /= n
-            sigma /= n
-            sigma -= mean**2
-            sigma = math.sqrt(sigma)
-            self.__sentence_mean = mean
-            self.__sentence_sigma = sigma
-        else:
-            raise InvalidSampleText
+        return mean, sigma
+
+    def __generate_sentence_statistics(self):
+        sentences = self.__split_sentences(self.sample)
+        sentence_lengths = [len(self.__split_words(sentence)) 
+            for sentence in sentences if len(sentence.strip()) > 0]
+        self.__generated_sentence_mean, self.__generated_sentence_sigma = \
+            self.__calculate_mean_sigma(sentence_lengths)
     
-    def __generate_paragraph_statistics(self, sample):
-        # Split the sample into a list of paragraphs
-        sample = sample.replace('\r\n', '\n')
-        sample = sample.replace('\r', '\n')
-        sample = sample.replace('\n', NEWLINE)
-        paragraphs = sample.split(NEWLINE * 2)
-
-        # Analyse paragraphs
-        mean = 0.0
-        sigma = 0.0
-        n = 0
-
-        for paragraph in paragraphs:
-            sentences = self.__split_sentences(paragraph)
-            sentences = sum([1 for sentence in sentences if len(sentence.strip()) > 0])
-            if sentences > 0:
-                sigma += sentences**2
-                mean += sentences
-                n += 1
-
-        if n > 0:
-            mean /= n
-            sigma /= n
-            sigma -= mean**2
-            sigma = math.sqrt(sigma)
-            self.__paragraph_mean = mean
-            self.__paragraph_sigma = sigma
-        else:
-            raise InvalidSampleText
+    def __generate_paragraph_statistics(self):
+        paragraphs = self.__split_paragraphs(self.sample)
+        paragraph_lengths = [len(self.__split_sentences(paragraph)) 
+            for paragraph in paragraphs if len(paragraph.strip()) > 0]
+        self.__generated_paragraph_mean, self.__generated_paragraph_sigma = \
+            self.__calculate_mean_sigma(paragraph_lengths)
     
-    def generate_sentence(self, start_with_lorem=False):
+    sample = property(__get_sample, __set_sample)
+    dictionary = property(__get_dictionary, __set_dictionary)
+
+    sentence_mean = property(__get_sentence_mean, __set_sentence_mean)
+    sentence_sigma = property(__get_sentence_sigma, __set_sentence_sigma)
+    paragraph_mean = property(__get_paragraph_mean, __set_paragraph_mean)
+    paragraph_sigma = property(__get_paragraph_sigma, __set_paragraph_sigma)
+
+    def __init__(self, sample=DEFAULT_SAMPLE, dictionary=DEFAULT_DICT):
         """
-        Generates a single sentence, of random length.
+        Initialises a lorem ipsum generator by performing ahead of time 
+        the calculations required by all "generations".
 
-        If start_with_lorem=True, then the sentence will begin with the
-        standard "Lorem ipsum..." first sentence.
+        Requires two strings containing a sample text and a dictionary 
         """
+        self.__set_sample(sample)
+        self.__set_dictionary(dictionary)
 
-        if len(self.__chains) == 0 or len(self.__chains_starts) == 0:
-            raise NoChains
-
-        if len(self.__chains_dictionary) == 0:
-            raise NoDictionary
-
-        # Determine randomly the length of the sentence
-        sentence_length = random.normalvariate(self.__sentence_mean, self.__sentence_sigma)
-        sentence_length = max(int(round(sentence_length)), 1)
-
-        sentence = []
-        previous = ()
-
-        # Generate a sentence from the "chains"
-        word_delimiter = '' # Defined here in case while loop doesn't run
-
-        # Start with "Lorem ipsum..."
-        if start_with_lorem:
-            lorem = "lorem ipsum dolor sit amet, consecteteur adipiscing elit".split()
-            sentence += lorem[:sentence_length]
-            last_char = sentence[-1][-1]
-            if last_char not in self.__delimiters_sentences:
-                word_delimiter = last_char
-
-        while len(sentence) < sentence_length:
-            while (not self.__chains.has_key(previous)):
-                previous = random.choice(self.__chains_starts)
-
-            chain = random.choice(self.__chains[previous])
-
-            word_length = chain[0]
-            
-            if chain[1] in self.__delimiters_sentences:
-                word_delimiter = ''
-            else:
-                word_delimiter = chain[1]
-
-            word = random.choice(self.__choose_closest_key(self.__chains_dictionary, word_length))
-            word = word.lower()
-
-            previous = (previous[1], word_length)
-
-            sentence += [word + word_delimiter]
-
-        # Finish the sentence off with capitalisation, a period and 
-        # form it into a string
-        if word_delimiter not in self.__delimiters_sentences:
-            if word_delimiter in self.__delimiters_words:
-                sentence[-1] = sentence[-1].rstrip(word_delimiter) + '.'
-            else:
-                sentence[-1] = sentence[-1] + '.'
-
-        sentence[0] = sentence[0].capitalize()
-        sentence = ' '.join(sentence)
-
-        return sentence
-    
-    def generate_paragraph(self, start_with_lorem=False):
-        """
-        Generates a single lorem ipsum paragraph, of random length.
-
-        If start_with_lorem=True, then the sentence will begin with the
-        standard "Lorem ipsum..." first sentence.
-        """
-
-        paragraph = []
-
-        # Determine randomly the length of the paragraph
-        paragraph_length = random.normalvariate(self.__paragraph_mean, self.__paragraph_sigma)
-        paragraph_length = max(int(round(paragraph_length)), 1)
-
-        # Generate the paragraph
-        while len(paragraph) < paragraph_length:
-            sentence = self.generate_sentence(
-                    start_with_lorem = (start_with_lorem and len(paragraph) == 0)
-                    )
-            paragraph += [sentence]
-
-        # Finish the paragraph off
-        paragraph = ' '.join(paragraph)
-        return paragraph
-    
-    def __choose_closest_key(self, dictionary, target_key):
-        """
-        For dictionaries with numerical or otherwise ordered keys, 
-        choose the key closest to the given number.
-        """
-
-        above = False
-        below = False
-        
-        for key in dictionary.iterkeys():
-            above = key
-            if target_key < key:
-                if below == False:
-                    below = above
-                break
-            below = key
-
-        if abs(above - target_key) < abs(below - target_key):
-            return dictionary[above]
-        else:
-            return dictionary[below]
-    
-    sentence_mean           = property(__get_sentence_mean, __set_sentence_mean)
-    sentence_sigma          = property(__get_sentence_sigma, __set_sentence_sigma)
-    paragraph_mean          = property(__get_paragraph_mean, __set_paragraph_mean)
-    paragraph_sigma         = property(__get_paragraph_sigma, __set_paragraph_sigma)
-    
-    sample                  = property(__get_sample, __set_sample)
-    dictionary              = property(__get_dictionary, __set_dictionary)
 
 class MarkupGenerator(Generator):
     """
@@ -530,97 +493,109 @@ class MarkupGenerator(Generator):
     Provides a number of methods for producing "lorem ipsum" text with
     varying formats.
     """
-    def __generate_markup_paragraphs(self, begin_paragraph, end_paragraph, between_paragraphs, quantity, start_with_lorem=False):
-        text = []
-
-        while len(text) < quantity:
-            paragraph = self.generate_paragraph(
-                    start_with_lorem = (start_with_lorem and len(text) == 0)
-                    )
-            paragraph = begin_paragraph + paragraph + end_paragraph
-            text += [paragraph]
-
-        text = between_paragraphs.join(text)
-        return text
-    
-    def __generate_markup_sentences(self, begin_sentence, end_sentence, between_sentences, quantity, start_with_lorem=False):
-        text = []
-
-        while len(text) < quantity:
-            sentence = self.generate_sentence(
-                    start_with_lorem = (start_with_lorem and len(text) == 0)
-                    )
-            sentence = begin_sentence + sentence + end_sentence
-            text += [sentence]
-
-        text = between_sentences.join(text)
-        return text
-
-    def generate_html_paragraphs(self, quantity, start_with_lorem=False):
+    def __generate_markup(self, begin, end, between, quantity, 
+        start_with_lorem, function):
         """
-        Generates a quantity of paragraphs, with each paragraph 
+        Generates multiple pieces of text, with begin before each piece, end 
+        after each piece, and between between each piece. Accepts a function 
+        that returns a string.
+        """
+        text = []
+
+        while len(text) < quantity:
+            part = function(
+                    start_with_lorem = (start_with_lorem and len(text) == 0)
+                    )
+            part = begin + part + end
+            text += [part]
+
+        text = between.join(text)
+        return text
+
+    def __generate_markup_paragraphs(self, begin_paragraph, end_paragraph, 
+        between_paragraphs, quantity, start_with_lorem=False):
+        return self.__generate_markup(
+                begin_paragraph,
+                end_paragraph,
+                between_paragraphs,
+                quantity,
+                start_with_lorem,
+                self.generate_paragraph)
+    
+    def __generate_markup_sentences(self, begin_sentence, end_sentence, 
+        between_sentences, quantity, start_with_lorem=False):
+        return self.__generate_markup(
+                begin_sentence,
+                end_sentence,
+                between_sentences,
+                quantity,
+                start_with_lorem,
+                self.generate_sentence)
+
+    def generate_paragraphs_plain(self, quantity, start_with_lorem=False):
+        """Generates a number of paragraphs, separated by empty lines."""
+        return self.__generate_markup_paragraphs(
+                begin_paragraph='',
+                end_paragraph='',
+                between_paragraphs=NEWLINE * 2,
+                quantity=quantity,
+                start_with_lorem=start_with_lorem
+                )
+
+    def generate_sentences_plain(self, quantity, start_with_lorem=False):
+        """Generates a number of sentences."""
+        return self.__generate_markup_sentences(
+                begin_sentence='',
+                end_sentence='',
+                between_sentences=' ',
+                quantity=quantity,
+                start_with_lorem=start_with_lorem
+                )
+
+    def generate_paragraphs_html_p(self, quantity, start_with_lorem=False):
+        """
+        Generates a number of paragraphs, with each paragraph 
         surrounded by HTML pararaph tags.
         """
         return self.__generate_markup_paragraphs(
-                begin_paragraph     = '<p>' + NEWLINE + '\t',
-                end_paragraph       = NEWLINE + '</p>',
-                between_paragraphs  = NEWLINE,
-                quantity            = quantity,
-                start_with_lorem    = start_with_lorem
-                )
-    
-    def generate_text_paragraphs(self, quantity, start_with_lorem=False):
-        """
-        Generates a quantity of paragraphs, separated by empty lines.
-        """
-        return self.__generate_markup_paragraphs(
-                begin_paragraph     = '',
-                end_paragraph       = '',
-                between_paragraphs  = NEWLINE * 2,
-                quantity            = quantity,
-                start_with_lorem    = start_with_lorem
-                )
-    
-    def generate_html_sentence_list(self, quantity, start_with_lorem=False):
-        """Generates a quantity of sentences surrounded by HTML 'li' tags."""
-        output = self.__generate_markup_sentences(
-                begin_sentence      = '\t<li>' + NEWLINE + '\t\t',
-                end_sentence        = NEWLINE + '\t</li>',
-                between_sentences   = NEWLINE,
-                quantity            = quantity,
-                start_with_lorem    = start_with_lorem
+                begin_paragraph='<p>' + NEWLINE + '\t',
+                end_paragraph=NEWLINE + '</p>',
+                between_paragraphs=NEWLINE,
+                quantity=quantity,
+                start_with_lorem=start_with_lorem
                 )
 
-        return ('<ul>' + NEWLINE + output + NEWLINE + '</ul>')
-    
-    def generate_html_paragraph_list(self, quantity, start_with_lorem=False):
-        """Generates a quantity of paragraphs surrounded by HTML 'li' tags."""
+    def generate_sentences_html_p(self, quantity, start_with_lorem=False):
+        """
+        Generates a number of sentences, with each sentence 
+        surrounded by HTML pararaph tags.
+        """
+        return self.__generate_markup_sentences(
+                begin_sentence='<p>' + NEWLINE + '\t',
+                end_sentence=NEWLINE + '</p>',
+                between_sentences=NEWLINE,
+                quantity=quantity,
+                start_with_lorem=start_with_lorem
+                )
+
+    def generate_paragraphs_html_li(self, quantity, start_with_lorem=False):
+        """Generates a number of paragraphs, separated by empty lines."""
         output = self.__generate_markup_paragraphs(
-                begin_paragraph     = '\t<li>' + NEWLINE + '\t\t', 
-                end_paragraph       = NEWLINE + '\t</li>',
-                between_paragraphs  = NEWLINE,
-                quantity            = quantity,
-                start_with_lorem    = start_with_lorem
+                begin_paragraph='\t<li>\n\t\t',
+                end_paragraph='\n\t</li>',
+                between_paragraphs=NEWLINE,
+                quantity=quantity,
+                start_with_lorem=start_with_lorem
                 )
         return ('<ul>' + NEWLINE + output + NEWLINE + '</ul>')
 
-    def generate_html_sentences(self, quantity, start_with_lorem = False):
-        return self.__generate_markup_sentences(
-                begin_sentence      = '<p>' + NEWLINE + '\t',
-                end_sentence        = NEWLINE + '</p>',
-                between_sentences   = NEWLINE,
-                quantity            = quantity,
-                start_with_lorem    = start_with_lorem
+    def generate_sentences_html_li(self, quantity, start_with_lorem=False):
+        """Generates a number of sentences surrounded by HTML 'li' tags."""
+        output = self.__generate_markup_sentences(
+                begin_sentence='\t<li>' + NEWLINE + '\t\t',
+                end_sentence=NEWLINE + '\t</li>',
+                between_sentences=NEWLINE,
+                quantity=quantity,
+                start_with_lorem=start_with_lorem
                 )
-    
-    def generate_text_sentences(self, quantity, start_with_lorem=False):
-        """
-        Generates a quantity of sentences.
-        """
-        return self.__generate_markup_sentences(
-                begin_sentence      = '',
-                end_sentence        = '',
-                between_sentences   = ' ',
-                quantity            = quantity,
-                start_with_lorem    = start_with_lorem
-                )
+        return ('<ul>' + NEWLINE + output + NEWLINE + '</ul>')
