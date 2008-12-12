@@ -17,7 +17,7 @@ setup(
 		long_description = 'Lorem Ipsum Generator provides a GTK+ graphical user interface, and a Python module, that generates random "lorem ipsum" text. The Lorem Ipsum Generator can produce a given quantity of paragraphs or sentences of "lorem ipsum" text.',
 		author = 'James Hales',
 		author_email = 'jhales.perth@gmail.com',
-		license = 'GNU General Public Licence 3.0',
+		license = 'BSD License',
 		url = 'http://code.google.com/p/lorem-ipsum-generator/',
 		py_modules = ['lipsum'],
 		scripts = scripts,
