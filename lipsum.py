@@ -174,8 +174,8 @@ class Generator(object):
             raise NoDictionaryError
 
         # The length of the sentence is a normally distributed random variable.
-        sentence_length = random.normalvariate(self.__sentence_mean, \
-            self.__sentence_sigma)
+        sentence_length = random.normalvariate(self.sentence_mean, \
+            self.sentence_sigma)
         sentence_length = max(int(round(sentence_length)), 1)
 
         sentence = []
@@ -242,8 +242,8 @@ class Generator(object):
         paragraph = []
 
         # The length of the paragraph is a normally distributed random variable.
-        paragraph_length = random.normalvariate(self.__paragraph_mean, \
-            self.__paragraph_sigma)
+        paragraph_length = random.normalvariate(self.paragraph_mean, \
+            self.paragraph_sigma)
         paragraph_length = max(int(round(paragraph_length)), 1)
 
         # Construct a paragraph from a number of sentences.
@@ -355,7 +355,7 @@ class Generator(object):
     
     def __set_sentence_sigma(self, sigma):
         if sigma < 0:
-            raise ValueError('Standard deviation of sentence length must be'
+            raise ValueError('Standard deviation of sentence length must be '
                 'non-negative.')
         self.__sentence_sigma = sigma
     
@@ -366,7 +366,7 @@ class Generator(object):
 
     def __set_paragraph_sigma(self, sigma):
         if sigma < 0:
-            raise ValueError('Standard deviation of paragraph length must be'
+            raise ValueError('Standard deviation of paragraph length must be '
                 'non-negative.')
         self.__paragraph_sigma = sigma
 
@@ -408,10 +408,10 @@ class Generator(object):
         and paragraph_sigma to their values as calculated from the sample 
         text.
         """
-        self.__sentence_mean = self.__generated_sentence_mean
-        self.__sentence_sigma = self.__generated_sentence_sigma
-        self.__paragraph_mean = self.__generated_paragraph_mean
-        self.__paragraph_sigma = self.__generated_paragraph_sigma
+        self.sentence_mean = self.__generated_sentence_mean
+        self.sentence_sigma = self.__generated_sentence_sigma
+        self.paragraph_mean = self.__generated_paragraph_mean
+        self.paragraph_sigma = self.__generated_paragraph_sigma
 
     def __generate_statistics(self):
         self.__generate_sentence_statistics()
