@@ -189,7 +189,7 @@ class Generator(object):
             lorem = lorem.split()
             sentence += lorem[:sentence_length]
             last_char = sentence[-1][-1]
-            if last_char not in self.__delimiters_sentences:
+            if last_char in self.__delimiters_words:
                 word_delimiter = last_char
 
         # Generate a sentence from the "chains"
