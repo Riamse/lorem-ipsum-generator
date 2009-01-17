@@ -128,17 +128,17 @@ class NoChainsError(Exception):
 
 class Generator(object):
     """
-    Generates random strings of "lorem ipsum" text, based on the word 
-    distribution of a given sample text, using the words in a given 
+    Generates random strings of "lorem ipsum" text, based on the word
+    distribution of a given sample text, using the words in a given
     dictionary.
     """
     # Delimiters that mark ends of sentences
     __delimiters_sentences = ['.', '?', '!']
 
-    # Delimiters which do not form parts of words (i.e. "hello," is the word 
+    # Delimiters which do not form parts of words (i.e. "hello," is the word
     # "hello" with a comma next to it)
     __delimiters_words = [','] + __delimiters_sentences
-    
+
     # Markov chain statistics
     __chains = {}
     __chains_starts = []
@@ -198,14 +198,14 @@ class Generator(object):
             while (not self.__chains.has_key(previous)):
                 previous = random.choice(self.__chains_starts)
 
-            # Choose the next "chain" to go to. This determines the next word 
-            # length we'll use, and whether there is e.g. a comma at the end of 
+            # Choose the next "chain" to go to. This determines the next word
+            # length we'll use, and whether there is e.g. a comma at the end of
             # the word.
             chain = random.choice(self.__chains[previous])
             word_length = chain[0]
-            
-            # If the word delimiter contained in the chain is also a sentence 
-            # delimiter, then we don't include it because we don't want the 
+
+            # If the word delimiter contained in the chain is also a sentence
+            # delimiter, then we don't include it because we don't want the
             # sentence to end prematurely (we want the length to match the
             # sentence_length value).
             if chain[1] in self.__delimiters_sentences:
@@ -213,7 +213,7 @@ class Generator(object):
             else:
                 word_delimiter = chain[1]
 
-            # Choose a word randomly that matches (or closely matches) the 
+            # Choose a word randomly that matches (or closely matches) the
             # length we're after.
             closest_length = self.__choose_closest(
                     self.__chains_dictionary.keys(),
@@ -224,7 +224,7 @@ class Generator(object):
             sentence += [word + word_delimiter]
             previous = (previous[1], word_length)
 
-        # Finish the sentence off with capitalisation, a period and 
+        # Finish the sentence off with capitalisation, a period and
         # form it into a string
         sentence = ' '.join(sentence)
         sentence = sentence.capitalize()
@@ -257,7 +257,7 @@ class Generator(object):
         paragraph = ' '.join(paragraph)
 
         return paragraph
-    
+
     def __choose_closest(self, values, target):
         """
         Find the number in the list of values that is closest to the target.
@@ -278,8 +278,8 @@ class Generator(object):
         """
         The sample text is used to calculate the word distribution to be used
         by the generated lorem ipsum text. Sentences are separated by periods,
-        question marks or exclamation marks. Commas are included in the 
-        generated lorem ipsum text according to their distribution in the 
+        question marks or exclamation marks. Commas are included in the
+        generated lorem ipsum text according to their distribution in the
         sample text. All other punctuation marks should ideally be removed,
         or else they will be interpreted incorrectly. Paragraphs are separated
         by empty lines.
@@ -302,7 +302,7 @@ class Generator(object):
 
             if word[-1] in self.__delimiters_words:
                 word_delimiter = word[-1]
-            
+
             word = word.rstrip(word_delimiter)
 
             chains.setdefault(previous, []).append(
@@ -325,7 +325,7 @@ class Generator(object):
 
     def __get_dictionary(self):
         """
-        The dictionary text is used as the list of words to use in the 
+        The dictionary text is used as the list of words to use in the
         generated lorem ipsum text. Words are separated by white space and are
         case-insensitive.
         """
@@ -352,13 +352,13 @@ class Generator(object):
         if mean < 0:
             raise ValueError('Mean sentence length must be non-negative.')
         self.__sentence_mean = mean
-    
+
     def __set_sentence_sigma(self, sigma):
         if sigma < 0:
             raise ValueError('Standard deviation of sentence length must be '
                 'non-negative.')
         self.__sentence_sigma = sigma
-    
+
     def __set_paragraph_mean(self, mean):
         if mean < 0:
             raise ValueError('Mean paragraph length must be non-negative.')
@@ -372,40 +372,40 @@ class Generator(object):
 
     def __get_sentence_mean(self):
         """
-        A non-negative value determining the mean sentence length (in words) 
-        of generated sentences. Is changed to match the sample text when the 
+        A non-negative value determining the mean sentence length (in words)
+        of generated sentences. Is changed to match the sample text when the
         sample text is updated.
         """
         return self.__sentence_mean
 
     def __get_sentence_sigma(self):
         """
-        A non-negative value determining the standard deviation of sentence 
-        lengths (in words) of generated sentences. Is changed to match the 
+        A non-negative value determining the standard deviation of sentence
+        lengths (in words) of generated sentences. Is changed to match the
         sample text when the sample text is updated.
         """
         return self.__sentence_sigma
 
     def __get_paragraph_mean(self):
         """
-        A non-negative value determining the mean paragraph length (in 
-        sentences) of generated sentences. Is changed to match the sample text 
+        A non-negative value determining the mean paragraph length (in
+        sentences) of generated sentences. Is changed to match the sample text
         when the sample text is updated.
         """
         return self.__paragraph_mean
 
     def __get_paragraph_sigma(self):
         """
-        A non-negative value determining the standard deviation of paragraph 
+        A non-negative value determining the standard deviation of paragraph
         lengths (in sentences) of generated sentences. Is changed to match the
         sample text when the sample text is updated.
         """
         return self.__paragraph_sigma
-    
+
     def reset_statistics(self):
         """
         Returns the values of sentence_mean, sentence_sigma, paragraph_mean,
-        and paragraph_sigma to their values as calculated from the sample 
+        and paragraph_sigma to their values as calculated from the sample
         text.
         """
         self.sentence_mean = self.__generated_sentence_mean
@@ -437,34 +437,27 @@ class Generator(object):
         return text.split()
 
     def __calculate_mean_sigma(self, values):
-        sum = 0.0
-        sumsq = 0.0
         n = len(values)
-
-        for value in values:
-            sum     += value
-            sumsq   += value ** 2
-
-        mean = sum / n
-        variance = sumsq / n - mean ** 2
+        mean = sum(map(lambda x : float(x), values)) / n
+        variance = sum(map(lambda x : float(x) ** 2, values)) / n - mean ** 2
         sigma = math.sqrt(variance)
 
         return mean, sigma
 
     def __generate_sentence_statistics(self):
         sentences = self.__split_sentences(self.sample)
-        sentence_lengths = [len(self.__split_words(sentence)) 
+        sentence_lengths = [len(self.__split_words(sentence))
             for sentence in sentences if len(sentence.strip()) > 0]
         self.__generated_sentence_mean, self.__generated_sentence_sigma = \
             self.__calculate_mean_sigma(sentence_lengths)
-    
+
     def __generate_paragraph_statistics(self):
         paragraphs = self.__split_paragraphs(self.sample)
-        paragraph_lengths = [len(self.__split_sentences(paragraph)) 
+        paragraph_lengths = [len(self.__split_sentences(paragraph))
             for paragraph in paragraphs if len(paragraph.strip()) > 0]
         self.__generated_paragraph_mean, self.__generated_paragraph_sigma = \
             self.__calculate_mean_sigma(paragraph_lengths)
-    
+
     sample = property(__get_sample, __set_sample)
     dictionary = property(__get_dictionary, __set_dictionary)
 
@@ -475,10 +468,10 @@ class Generator(object):
 
     def __init__(self, sample=DEFAULT_SAMPLE, dictionary=DEFAULT_DICT):
         """
-        Initialises a lorem ipsum generator by performing ahead of time 
+        Initialises a lorem ipsum generator by performing ahead of time
         the calculations required by all "generations".
 
-        Requires two strings containing a sample text and a dictionary 
+        Requires two strings containing a sample text and a dictionary
         """
         self.__set_sample(sample)
         self.__set_dictionary(dictionary)
@@ -486,18 +479,18 @@ class Generator(object):
 
 class MarkupGenerator(Generator):
     """
-    Generates random strings of "lorem ipsum" text, based on the word 
-    distribution of a given sample text, using the words in a given 
+    Generates random strings of "lorem ipsum" text, based on the word
+    distribution of a given sample text, using the words in a given
     dictionary.
 
     Provides a number of methods for producing "lorem ipsum" text with
     varying formats.
     """
-    def __generate_markup(self, begin, end, between, quantity, 
+    def __generate_markup(self, begin, end, between, quantity,
         start_with_lorem, function):
         """
-        Generates multiple pieces of text, with begin before each piece, end 
-        after each piece, and between between each piece. Accepts a function 
+        Generates multiple pieces of text, with begin before each piece, end
+        after each piece, and between between each piece. Accepts a function
         that returns a string.
         """
         text = []
@@ -512,7 +505,7 @@ class MarkupGenerator(Generator):
         text = between.join(text)
         return text
 
-    def __generate_markup_paragraphs(self, begin_paragraph, end_paragraph, 
+    def __generate_markup_paragraphs(self, begin_paragraph, end_paragraph,
         between_paragraphs, quantity, start_with_lorem=False):
         return self.__generate_markup(
                 begin_paragraph,
@@ -521,8 +514,8 @@ class MarkupGenerator(Generator):
                 quantity,
                 start_with_lorem,
                 self.generate_paragraph)
-    
-    def __generate_markup_sentences(self, begin_sentence, end_sentence, 
+
+    def __generate_markup_sentences(self, begin_sentence, end_sentence,
         between_sentences, quantity, start_with_lorem=False):
         return self.__generate_markup(
                 begin_sentence,
@@ -554,7 +547,7 @@ class MarkupGenerator(Generator):
 
     def generate_paragraphs_html_p(self, quantity, start_with_lorem=False):
         """
-        Generates a number of paragraphs, with each paragraph 
+        Generates a number of paragraphs, with each paragraph
         surrounded by HTML pararaph tags.
         """
         return self.__generate_markup_paragraphs(
@@ -567,7 +560,7 @@ class MarkupGenerator(Generator):
 
     def generate_sentences_html_p(self, quantity, start_with_lorem=False):
         """
-        Generates a number of sentences, with each sentence 
+        Generates a number of sentences, with each sentence
         surrounded by HTML pararaph tags.
         """
         return self.__generate_markup_sentences(

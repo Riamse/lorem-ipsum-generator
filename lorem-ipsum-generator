@@ -15,7 +15,7 @@ class LipsumGUI:
 
         self.__generator = MarkupGenerator()
 
-        filename = 'lorem.glade'
+        filename = 'lorem-ipsum-generator.glade'
 
         self.__w_tree = gtk.glade.XML(filename, "main")
 
