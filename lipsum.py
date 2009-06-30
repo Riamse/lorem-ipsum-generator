@@ -111,10 +111,14 @@ def split_paragraphs(text):
     """
     Splits a piece of text into paragraphs, separated by empty lines.
     """
-    text = text.replace('\r\n', '\n')
-    text = text.replace('\r', '\n')
-    text = text.replace('\n', NEWLINE)
-    paragraphs = text.split(NEWLINE * 2)
+    lines = text.splitlines()
+    paragraphs = [[]]
+    for line in lines:
+        if len(line.strip()) > 0:
+            paragraphs[-1] += [line]
+        elif len(paragraphs[-1]) > 0:
+            paragraphs.append([])
+    paragraphs = map(' '.join, paragraphs)
     return paragraphs
 
 def split_sentences(text):
