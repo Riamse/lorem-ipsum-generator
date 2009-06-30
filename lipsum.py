@@ -165,7 +165,7 @@ def get_word_info(word):
 
     for delimiter in DELIMITERS_WORDS:
         if len(delimiter) > len(longest[1]) and word.endswith(delimiter):
-            p = word.rpartition(delimiter)
+            word = word.rpartition(delimiter)
             longest = (word[0], word[1])
 
     return (len(longest[0]), longest[1])
