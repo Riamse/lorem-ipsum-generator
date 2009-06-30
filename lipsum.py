@@ -6,6 +6,13 @@ import os
 import random
 import re
 
+# Delimiters that mark ends of sentences
+DELIMITERS_SENTENCES = ['.', '?', '!']
+
+# Delimiters which do not form parts of words (i.e. "hello," is the word
+# "hello" with a comma next to it)
+DELIMITERS_WORDS = [','] + DELIMITERS_SENTENCES
+
 NEWLINE = os.linesep
 
 # Contains a reasonable default sample text
@@ -132,21 +139,10 @@ class Generator(object):
     distribution of a given sample text, using the words in a given
     dictionary.
     """
-    # Delimiters that mark ends of sentences
-    __delimiters_sentences = ['.', '?', '!']
-
-    # Delimiters which do not form parts of words (i.e. "hello," is the word
-    # "hello" with a comma next to it)
-    __delimiters_words = [','] + __delimiters_sentences
-
     # Markov chain statistics
     __chains = {}
-    __chains_starts = []
-    __chains_dictionary = {}
-
-    # Stored sample / dictionary values
-    __sample = ""
-    __dictionary = ""
+    __starts = []
+    __words = {}
 
     # Statistics for sentence and paragraph generation
     __sentence_mean = 0
@@ -167,10 +163,10 @@ class Generator(object):
         If start_with_lorem=True, then the sentence will begin with the
         standard "Lorem ipsum..." first sentence.
         """
-        if len(self.__chains) == 0 or len(self.__chains_starts) == 0:
+        if len(self.__chains) == 0 or len(self.__starts) == 0:
             raise NoChainsError
 
-        if len(self.__chains_dictionary) == 0:
+        if len(self.__words) == 0:
             raise NoDictionaryError
 
         # The length of the sentence is a normally distributed random variable.
@@ -189,14 +185,14 @@ class Generator(object):
             lorem = lorem.split()
             sentence += lorem[:sentence_length]
             last_char = sentence[-1][-1]
-            if last_char in self.__delimiters_words:
+            if last_char in DELIMITERS_WORDS:
                 word_delimiter = last_char
 
         # Generate a sentence from the "chains"
         while len(sentence) < sentence_length:
             # If the current starting point is invalid, choose another randomly
             while (not self.__chains.has_key(previous)):
-                previous = random.choice(self.__chains_starts)
+                previous = random.choice(self.__starts)
 
             # Choose the next "chain" to go to. This determines the next word
             # length we'll use, and whether there is e.g. a comma at the end of
@@ -208,7 +204,7 @@ class Generator(object):
             # delimiter, then we don't include it because we don't want the
             # sentence to end prematurely (we want the length to match the
             # sentence_length value).
-            if chain[1] in self.__delimiters_sentences:
+            if chain[1] in DELIMITERS_SENTENCES:
                 word_delimiter = ''
             else:
                 word_delimiter = chain[1]
@@ -216,9 +212,9 @@ class Generator(object):
             # Choose a word randomly that matches (or closely matches) the
             # length we're after.
             closest_length = self.__choose_closest(
-                    self.__chains_dictionary.keys(),
+                    self.__words.keys(),
                     word_length)
-            word = random.choice(self.__chains_dictionary[closest_length])
+            word = random.choice(self.__words[closest_length])
             word = word.lower()
 
             sentence += [word + word_delimiter]
@@ -270,24 +266,11 @@ class Generator(object):
         return closest
 
     def __set_sample(self, sample):
-        self.__sample = sample
-        self.__generate_chains()
-        self.__generate_statistics()
+        self.__generate_chains(sample)
+        self.__generate_statistics(sample)
 
-    def __get_sample(self):
-        """
-        The sample text is used to calculate the word distribution to be used
-        by the generated lorem ipsum text. Sentences are separated by periods,
-        question marks or exclamation marks. Commas are included in the
-        generated lorem ipsum text according to their distribution in the
-        sample text. All other punctuation marks should ideally be removed,
-        or else they will be interpreted incorrectly. Paragraphs are separated
-        by empty lines.
-        """
-        return self.__sample
-
-    def __generate_chains(self):
-        words = self.__sample.split()
+    def __generate_chains(self, sample):
+        words = sample.split()
         previous = (0, 0)
         chains = {}
         chains_starts = [previous]
@@ -300,7 +283,7 @@ class Generator(object):
             # the character and record it
             word_delimiter = ''
 
-            if word[-1] in self.__delimiters_words:
+            if word[-1] in DELIMITERS_WORDS:
                 word_delimiter = word[-1]
 
             word = word.rstrip(word_delimiter)
@@ -310,12 +293,12 @@ class Generator(object):
             previous = (previous[1], len(word))
 
             # If the word ends in a "sentence delimiter", record it
-            if word_delimiter in self.__delimiters_sentences:
+            if word_delimiter in DELIMITERS_SENTENCES:
                 chains_starts += [previous]
 
         if len(chains) > 0 and len(chains_starts) > 0:
             self.__chains = chains
-            self.__chains_starts = chains_starts
+            self.__starts = chains_starts
         else:
             raise InvalidSampleTextError
 
@@ -344,7 +327,7 @@ class Generator(object):
             dictionary[length] += [word]
 
         if len(dictionary) > 0:
-            self.__chains_dictionary = dictionary
+            self.__words = dictionary
         else:
             raise InvalidDictionaryTextError
 
@@ -413,9 +396,9 @@ class Generator(object):
         self.paragraph_mean = self.__generated_paragraph_mean
         self.paragraph_sigma = self.__generated_paragraph_sigma
 
-    def __generate_statistics(self):
-        self.__generate_sentence_statistics()
-        self.__generate_paragraph_statistics()
+    def __generate_statistics(self, sample):
+        self.__generate_sentence_statistics(sample)
+        self.__generate_paragraph_statistics(sample)
         self.reset_statistics()
 
     def __split_paragraphs(self, text):
@@ -427,7 +410,7 @@ class Generator(object):
 
     def __split_sentences(self, text):
         sentence_split = ''
-        for delimiter in self.__delimiters_sentences:
+        for delimiter in DELIMITERS_SENTENCES:
             sentence_split += '\\' + delimiter
         sentence_split = '[' + sentence_split + ']'
         sentences = re.split(sentence_split, text)
@@ -444,22 +427,22 @@ class Generator(object):
 
         return mean, sigma
 
-    def __generate_sentence_statistics(self):
-        sentences = self.__split_sentences(self.sample)
+    def __generate_sentence_statistics(self, sample):
+        sentences = self.__split_sentences(sample)
         sentence_lengths = [len(self.__split_words(sentence))
             for sentence in sentences if len(sentence.strip()) > 0]
         self.__generated_sentence_mean, self.__generated_sentence_sigma = \
             self.__calculate_mean_sigma(sentence_lengths)
 
-    def __generate_paragraph_statistics(self):
-        paragraphs = self.__split_paragraphs(self.sample)
+    def __generate_paragraph_statistics(self, sample):
+        paragraphs = self.__split_paragraphs(sample)
         paragraph_lengths = [len(self.__split_sentences(paragraph))
             for paragraph in paragraphs if len(paragraph.strip()) > 0]
         self.__generated_paragraph_mean, self.__generated_paragraph_sigma = \
             self.__calculate_mean_sigma(paragraph_lengths)
 
-    sample = property(__get_sample, __set_sample)
-    dictionary = property(__get_dictionary, __set_dictionary)
+    sample = property(None, __set_sample)
+    dictionary = property(None, __set_dictionary)
 
     sentence_mean = property(__get_sentence_mean, __set_sentence_mean)
     sentence_sigma = property(__get_sentence_sigma, __set_sentence_sigma)
@@ -473,8 +456,8 @@ class Generator(object):
 
         Requires two strings containing a sample text and a dictionary
         """
-        self.__set_sample(sample)
-        self.__set_dictionary(dictionary)
+        self.sample = sample
+        self.dictionary = dictionary
 
 
 class MarkupGenerator(Generator):
