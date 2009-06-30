@@ -156,6 +156,203 @@ class Generator(object):
     __generated_paragraph_mean = 0
     __generated_paragraph_sigma = 0
 
+    def __init__(self, sample=DEFAULT_SAMPLE, dictionary=DEFAULT_DICT):
+        """
+        Initialises a lorem ipsum generator by performing ahead of time
+        the calculations required by all "generations".
+
+        Requires two strings containing a sample text and a dictionary
+        """
+        self.sample = sample
+        self.dictionary = dictionary
+
+    def __set_sentence_mean(self, mean):
+        if mean < 0:
+            raise ValueError('Mean sentence length must be non-negative.')
+        self.__sentence_mean = mean
+
+    def __set_sentence_sigma(self, sigma):
+        if sigma < 0:
+            raise ValueError('Standard deviation of sentence length must be '
+                'non-negative.')
+        self.__sentence_sigma = sigma
+
+    def __set_paragraph_mean(self, mean):
+        if mean < 0:
+            raise ValueError('Mean paragraph length must be non-negative.')
+        self.__paragraph_mean = mean
+
+    def __set_paragraph_sigma(self, sigma):
+        if sigma < 0:
+            raise ValueError('Standard deviation of paragraph length must be '
+                'non-negative.')
+        self.__paragraph_sigma = sigma
+
+    def __get_sentence_mean(self):
+        """
+        A non-negative value determining the mean sentence length (in words)
+        of generated sentences. Is changed to match the sample text when the
+        sample text is updated.
+        """
+        return self.__sentence_mean
+
+    def __get_sentence_sigma(self):
+        """
+        A non-negative value determining the standard deviation of sentence
+        lengths (in words) of generated sentences. Is changed to match the
+        sample text when the sample text is updated.
+        """
+        return self.__sentence_sigma
+
+    def __get_paragraph_mean(self):
+        """
+        A non-negative value determining the mean paragraph length (in
+        sentences) of generated sentences. Is changed to match the sample text
+        when the sample text is updated.
+        """
+        return self.__paragraph_mean
+
+    def __get_paragraph_sigma(self):
+        """
+        A non-negative value determining the standard deviation of paragraph
+        lengths (in sentences) of generated sentences. Is changed to match the
+        sample text when the sample text is updated.
+        """
+        return self.__paragraph_sigma
+
+    sentence_mean = property(__get_sentence_mean, __set_sentence_mean)
+    sentence_sigma = property(__get_sentence_sigma, __set_sentence_sigma)
+    paragraph_mean = property(__get_paragraph_mean, __set_paragraph_mean)
+    paragraph_sigma = property(__get_paragraph_sigma, __set_paragraph_sigma)
+
+    def __set_sample(self, sample):
+        self.__generate_chains(sample)
+        self.__generate_statistics(sample)
+
+    def __generate_chains(self, sample):
+        words = sample.split()
+        previous = (0, 0)
+        chains = {}
+        chains_starts = [previous]
+
+        for word in words:
+            if not chains.has_key(previous):
+                chains[previous] = []
+
+            # If the word ends in a "word delimiter", strip it of
+            # the character and record it
+            word_delimiter = ''
+
+            if word[-1] in DELIMITERS_WORDS:
+                word_delimiter = word[-1]
+
+            word = word.rstrip(word_delimiter)
+
+            chains.setdefault(previous, []).append(
+                    (len(word), word_delimiter))
+            previous = (previous[1], len(word))
+
+            # If the word ends in a "sentence delimiter", record it
+            if word_delimiter in DELIMITERS_SENTENCES:
+                chains_starts += [previous]
+
+        if len(chains) > 0 and len(chains_starts) > 0:
+            self.__chains = chains
+            self.__starts = chains_starts
+        else:
+            raise InvalidSampleTextError
+
+    def __generate_statistics(self, sample):
+        self.__generate_sentence_statistics(sample)
+        self.__generate_paragraph_statistics(sample)
+        self.reset_statistics()
+
+    def __split_paragraphs(self, text):
+        text = text.replace('\r\n', '\n')
+        text = text.replace('\r', '\n')
+        text = text.replace('\n', NEWLINE)
+        paragraphs = text.split(NEWLINE * 2)
+        return paragraphs
+
+    def __split_sentences(self, text):
+        sentence_split = ''
+        for delimiter in DELIMITERS_SENTENCES:
+            sentence_split += '\\' + delimiter
+        sentence_split = '[' + sentence_split + ']'
+        sentences = re.split(sentence_split, text)
+        return sentences
+
+    def __split_words(self, text):
+        return text.split()
+
+    def __calculate_mean_sigma(self, values):
+        n = len(values)
+        mean = sum(map(lambda x : float(x), values)) / n
+        variance = sum(map(lambda x : float(x) ** 2, values)) / n - mean ** 2
+        sigma = math.sqrt(variance)
+
+        return mean, sigma
+
+    def __generate_sentence_statistics(self, sample):
+        sentences = self.__split_sentences(sample)
+        sentence_lengths = [len(self.__split_words(sentence))
+            for sentence in sentences if len(sentence.strip()) > 0]
+        self.__generated_sentence_mean, self.__generated_sentence_sigma = \
+            self.__calculate_mean_sigma(sentence_lengths)
+
+    def __generate_paragraph_statistics(self, sample):
+        paragraphs = self.__split_paragraphs(sample)
+        paragraph_lengths = [len(self.__split_sentences(paragraph))
+            for paragraph in paragraphs if len(paragraph.strip()) > 0]
+        self.__generated_paragraph_mean, self.__generated_paragraph_sigma = \
+            self.__calculate_mean_sigma(paragraph_lengths)
+
+    def reset_statistics(self):
+        """
+        Returns the values of sentence_mean, sentence_sigma, paragraph_mean,
+        and paragraph_sigma to their values as calculated from the sample
+        text.
+        """
+        self.sentence_mean = self.__generated_sentence_mean
+        self.sentence_sigma = self.__generated_sentence_sigma
+        self.paragraph_mean = self.__generated_paragraph_mean
+        self.paragraph_sigma = self.__generated_paragraph_sigma
+
+    def __set_dictionary(self, dictionary):
+        self.__dictionary = dictionary
+        self.__generate_dictionary()
+
+    def __generate_dictionary(self):
+        words = self.__dictionary.split()
+        dictionary = {}
+        for word in words:
+            word = word.lower()
+            length = len(word)
+
+            if not dictionary.has_key(length):
+                dictionary[length] = []
+
+            dictionary[length] += [word]
+
+        if len(dictionary) > 0:
+            self.__words = dictionary
+        else:
+            raise InvalidDictionaryTextError
+
+    sample = property(None, __set_sample)
+    dictionary = property(None, __set_dictionary)
+
+    def __choose_closest(self, values, target):
+        """
+        Find the number in the list of values that is closest to the target.
+        """
+        closest = values[0]
+        for value in values:
+            if abs(target - value) < abs(target - closest):
+                closest = value
+
+        return closest
+
     def generate_sentence(self, start_with_lorem=False):
         """
         Generates a single sentence, of random length.
@@ -253,211 +450,6 @@ class Generator(object):
         paragraph = ' '.join(paragraph)
 
         return paragraph
-
-    def __choose_closest(self, values, target):
-        """
-        Find the number in the list of values that is closest to the target.
-        """
-        closest = values[0]
-        for value in values:
-            if abs(target - value) < abs(target - closest):
-                closest = value
-
-        return closest
-
-    def __set_sample(self, sample):
-        self.__generate_chains(sample)
-        self.__generate_statistics(sample)
-
-    def __generate_chains(self, sample):
-        words = sample.split()
-        previous = (0, 0)
-        chains = {}
-        chains_starts = [previous]
-
-        for word in words:
-            if not chains.has_key(previous):
-                chains[previous] = []
-
-            # If the word ends in a "word delimiter", strip it of
-            # the character and record it
-            word_delimiter = ''
-
-            if word[-1] in DELIMITERS_WORDS:
-                word_delimiter = word[-1]
-
-            word = word.rstrip(word_delimiter)
-
-            chains.setdefault(previous, []).append(
-                    (len(word), word_delimiter))
-            previous = (previous[1], len(word))
-
-            # If the word ends in a "sentence delimiter", record it
-            if word_delimiter in DELIMITERS_SENTENCES:
-                chains_starts += [previous]
-
-        if len(chains) > 0 and len(chains_starts) > 0:
-            self.__chains = chains
-            self.__starts = chains_starts
-        else:
-            raise InvalidSampleTextError
-
-    def __set_dictionary(self, dictionary):
-        self.__dictionary = dictionary
-        self.__generate_dictionary()
-
-    def __get_dictionary(self):
-        """
-        The dictionary text is used as the list of words to use in the
-        generated lorem ipsum text. Words are separated by white space and are
-        case-insensitive.
-        """
-        return self.__dictionary
-
-    def __generate_dictionary(self):
-        words = self.__dictionary.split()
-        dictionary = {}
-        for word in words:
-            word = word.lower()
-            length = len(word)
-
-            if not dictionary.has_key(length):
-                dictionary[length] = []
-
-            dictionary[length] += [word]
-
-        if len(dictionary) > 0:
-            self.__words = dictionary
-        else:
-            raise InvalidDictionaryTextError
-
-    def __set_sentence_mean(self, mean):
-        if mean < 0:
-            raise ValueError('Mean sentence length must be non-negative.')
-        self.__sentence_mean = mean
-
-    def __set_sentence_sigma(self, sigma):
-        if sigma < 0:
-            raise ValueError('Standard deviation of sentence length must be '
-                'non-negative.')
-        self.__sentence_sigma = sigma
-
-    def __set_paragraph_mean(self, mean):
-        if mean < 0:
-            raise ValueError('Mean paragraph length must be non-negative.')
-        self.__paragraph_mean = mean
-
-    def __set_paragraph_sigma(self, sigma):
-        if sigma < 0:
-            raise ValueError('Standard deviation of paragraph length must be '
-                'non-negative.')
-        self.__paragraph_sigma = sigma
-
-    def __get_sentence_mean(self):
-        """
-        A non-negative value determining the mean sentence length (in words)
-        of generated sentences. Is changed to match the sample text when the
-        sample text is updated.
-        """
-        return self.__sentence_mean
-
-    def __get_sentence_sigma(self):
-        """
-        A non-negative value determining the standard deviation of sentence
-        lengths (in words) of generated sentences. Is changed to match the
-        sample text when the sample text is updated.
-        """
-        return self.__sentence_sigma
-
-    def __get_paragraph_mean(self):
-        """
-        A non-negative value determining the mean paragraph length (in
-        sentences) of generated sentences. Is changed to match the sample text
-        when the sample text is updated.
-        """
-        return self.__paragraph_mean
-
-    def __get_paragraph_sigma(self):
-        """
-        A non-negative value determining the standard deviation of paragraph
-        lengths (in sentences) of generated sentences. Is changed to match the
-        sample text when the sample text is updated.
-        """
-        return self.__paragraph_sigma
-
-    def reset_statistics(self):
-        """
-        Returns the values of sentence_mean, sentence_sigma, paragraph_mean,
-        and paragraph_sigma to their values as calculated from the sample
-        text.
-        """
-        self.sentence_mean = self.__generated_sentence_mean
-        self.sentence_sigma = self.__generated_sentence_sigma
-        self.paragraph_mean = self.__generated_paragraph_mean
-        self.paragraph_sigma = self.__generated_paragraph_sigma
-
-    def __generate_statistics(self, sample):
-        self.__generate_sentence_statistics(sample)
-        self.__generate_paragraph_statistics(sample)
-        self.reset_statistics()
-
-    def __split_paragraphs(self, text):
-        text = text.replace('\r\n', '\n')
-        text = text.replace('\r', '\n')
-        text = text.replace('\n', NEWLINE)
-        paragraphs = text.split(NEWLINE * 2)
-        return paragraphs
-
-    def __split_sentences(self, text):
-        sentence_split = ''
-        for delimiter in DELIMITERS_SENTENCES:
-            sentence_split += '\\' + delimiter
-        sentence_split = '[' + sentence_split + ']'
-        sentences = re.split(sentence_split, text)
-        return sentences
-
-    def __split_words(self, text):
-        return text.split()
-
-    def __calculate_mean_sigma(self, values):
-        n = len(values)
-        mean = sum(map(lambda x : float(x), values)) / n
-        variance = sum(map(lambda x : float(x) ** 2, values)) / n - mean ** 2
-        sigma = math.sqrt(variance)
-
-        return mean, sigma
-
-    def __generate_sentence_statistics(self, sample):
-        sentences = self.__split_sentences(sample)
-        sentence_lengths = [len(self.__split_words(sentence))
-            for sentence in sentences if len(sentence.strip()) > 0]
-        self.__generated_sentence_mean, self.__generated_sentence_sigma = \
-            self.__calculate_mean_sigma(sentence_lengths)
-
-    def __generate_paragraph_statistics(self, sample):
-        paragraphs = self.__split_paragraphs(sample)
-        paragraph_lengths = [len(self.__split_sentences(paragraph))
-            for paragraph in paragraphs if len(paragraph.strip()) > 0]
-        self.__generated_paragraph_mean, self.__generated_paragraph_sigma = \
-            self.__calculate_mean_sigma(paragraph_lengths)
-
-    sample = property(None, __set_sample)
-    dictionary = property(None, __set_dictionary)
-
-    sentence_mean = property(__get_sentence_mean, __set_sentence_mean)
-    sentence_sigma = property(__get_sentence_sigma, __set_sentence_sigma)
-    paragraph_mean = property(__get_paragraph_mean, __set_paragraph_mean)
-    paragraph_sigma = property(__get_paragraph_sigma, __set_paragraph_sigma)
-
-    def __init__(self, sample=DEFAULT_SAMPLE, dictionary=DEFAULT_DICT):
-        """
-        Initialises a lorem ipsum generator by performing ahead of time
-        the calculations required by all "generations".
-
-        Requires two strings containing a sample text and a dictionary
-        """
-        self.sample = sample
-        self.dictionary = dictionary
 
 
 class MarkupGenerator(Generator):
