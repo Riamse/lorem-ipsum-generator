@@ -406,7 +406,7 @@ class Generator(object):
     def __choose_random_start(self):
         starts = set(self.__starts)
         chains = set(self.__chains.keys())
-        valid_starts = list(chains:intersection(starts))
+        valid_starts = list(chains.intersection(starts))
         return random.choice(valid_starts)
 
     def generate_sentence(self, start_with_lorem=False):
