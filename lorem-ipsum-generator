@@ -112,7 +112,7 @@ class LipsumGUI:
         filename = self.__filechooserbutton_dictionary.get_filename()
         if filename:
             try:
-                dictionary = load_contents(filename)
+                dictionary = load_contents(filename).split()
             except IOError:
                 self.__ioerror(filename)
             self.__generator.dictionary = dictionary
@@ -199,7 +199,7 @@ def init_generator(options):
 
     if options.dictionary_path:
         try:
-            generator.dictionary = load_contents(options.dictionary_path)
+            generator.dictionary = load_contents(options.dictionary_path).split()
         except IOError:
             error('Unable to load dictionary file "%s".\n' % options.dictionary_path)
 

@@ -104,7 +104,7 @@ sample_text_file.close()
 
 dictionary_text_file = gzip.GzipFile(mode='rb',
     fileobj=StringIO(base64.b64decode(DEFAULT_DICT_COMPRESSED)))
-DEFAULT_DICT = dictionary_text_file.read()
+DEFAULT_DICT = dictionary_text_file.read().split()
 dictionary_text_file.close()
 
 def split_paragraphs(text):
@@ -148,6 +148,17 @@ def variance(values):
 
 def sigma(values):
     return math.sqrt(variance(values))
+
+def choose_closest(values, target):
+    """
+    Find the number in the list of values that is closest to the target.
+    """
+    closest = values[0]
+    for value in values:
+        if abs(target - value) < abs(target - closest):
+            closest = value
+
+    return closest
 
 
 class InvalidDictionaryTextError(Exception):
@@ -194,6 +205,9 @@ class Generator(object):
 
     # Pairs of word-lengths that can appear at the beginning of sentences
     __starts = []
+
+    # Sample that the generated text is based on
+    __sample = ""
 
     # Statistics for sentence and paragraph generation
     __sentence_mean = 0
@@ -276,10 +290,14 @@ class Generator(object):
     paragraph_mean = property(__get_paragraph_mean, __set_paragraph_mean)
     paragraph_sigma = property(__get_paragraph_sigma, __set_paragraph_sigma)
 
+    def __get_sample(self):
+        return self.__sample
+
     def __set_sample(self, sample):
         """
         Sets the generator to be based on a new sample text.
         """
+        self.__sample = sample
         self.__generate_chains(sample)
         self.__generate_statistics(sample)
 
@@ -358,44 +376,35 @@ class Generator(object):
         self.paragraph_mean = self.__generated_paragraph_mean
         self.paragraph_sigma = self.__generated_paragraph_sigma
 
+
     def __set_dictionary(self, dictionary):
         """
         Sets the generator to use a given selection of words for generating 
         sentences with.
         """
-        self.__dictionary = dictionary
-        self.__generate_dictionary()
+        words = {}
 
-    def __generate_dictionary(self):
-        words = self.__dictionary.split()
-        dictionary = {}
-        for word in words:
-            word = word.lower()
-            length = len(word)
+        for word in dictionary:
+            try:
+                word = str(word)
+                words.setdefault(len(word), set()).add(word)
+            except TypeError:
+                continue
 
-            if not dictionary.has_key(length):
-                dictionary[length] = []
+        if len(words) > 0:
+            self.__words = words
 
-            dictionary[length] += [word]
+    def __get_dictionary(self):
+        dictionary = []
 
-        if len(dictionary) > 0:
-            self.__words = dictionary
-        else:
-            raise InvalidDictionaryTextError
+        for length, words in self.__words.items():
+            for word in words:
+                dictionary.append(word)
 
-    sample = property(None, __set_sample)
-    dictionary = property(None, __set_dictionary)
+        return dictionary
 
-    def __choose_closest(self, values, target):
-        """
-        Find the number in the list of values that is closest to the target.
-        """
-        closest = values[0]
-        for value in values:
-            if abs(target - value) < abs(target - closest):
-                closest = value
-
-        return closest
+    sample = property(__get_sample, __set_sample)
+    dictionary = property(__get_dictionary, __set_dictionary)
 
     def generate_sentence(self, start_with_lorem=False):
         """
@@ -452,11 +461,10 @@ class Generator(object):
 
             # Choose a word randomly that matches (or closely matches) the
             # length we're after.
-            closest_length = self.__choose_closest(
+            closest_length = choose_closest(
                     self.__words.keys(),
                     word_length)
-            word = random.choice(self.__words[closest_length])
-            word = word.lower()
+            word = random.choice(list(self.__words[closest_length]))
 
             sentence += [word + word_delimiter]
             previous = (previous[1], word_length)
