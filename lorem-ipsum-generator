@@ -7,7 +7,7 @@ from optparse import OptionParser
 from lipsum import MarkupGenerator
 
 class LipsumGUI:
-    def __init__(self, generator=MarkupGenerator()):
+    def __init__(self, options = None, generator=MarkupGenerator()):
         import pygtk
         pygtk.require("2.0")
         import gtk
@@ -57,6 +57,7 @@ class LipsumGUI:
         self.__clipboard = gtk.Clipboard()
         
         self.__update_statistic_fields()
+        self.__set_defaults(options)
         
         self.__main.connect('destroy', gtk.main_quit)
         self.__main.show()
@@ -117,6 +118,36 @@ class LipsumGUI:
                 self.__ioerror(filename)
             self.__generator.dictionary = dictionary
 
+    def __set_defaults(self, options):
+        if options:
+            if options.paragraphs:
+                self.__spinbutton_quantity.set_value(options.paragraphs)
+                self.__radiobutton_quantity_paragraphs.set_active(True)
+            elif options.sentences:
+                self.__spinbutton_quantity.set_value(options.sentences)
+                self.__radiobutton_quantity_sentences.set_active(True)
+
+            if options.format == "html-p":
+                self.__radiobutton_format_html_paragraphs.set_active(True)
+            elif options.format == "html-li":
+                self.__radiobutton_format_html_list.set_active(True)
+            else:
+                self.__radiobutton_format_plain.set_active(True)
+
+            if options.lorem:
+                self.__checkbutton_start_with_lorem.set_active(True)
+            else:
+                self.__checkbutton_start_with_lorem.set_active(False)
+
+            if options.sample_path:
+                self.__filechooserbutton_sample.set_filename(options.sample_path)
+
+            if options.dictionary_path:
+                self.__filechooserbutton_dictionary.set_filename(options.dictionary_path)
+
+            if options.paragraphs or options.sentences:
+                self.__button_generate.clicked()
+
 	def __error(self, title, message):
 		error = gtk.MessageDialog(
 				type=gtk.MESSAGE_ERROR,
@@ -167,10 +198,10 @@ def main():
     (options, args) = parse_args()
     generator = init_generator(options)
 
-    if options.sentences or options.paragraphs:
+    if (options.sentences or options.paragraphs) and not options.gui:
         start_cli(options, generator)
     else:
-        start_gui(generator)
+        start_gui(options, generator)
 
 def parse_args():
     parser = OptionParser()
@@ -184,6 +215,7 @@ def parse_args():
     parser.add_option("--paragraph-sigma", dest="paragraph_sigma", help="set the standard deviation paragraph length to NUM", metavar="NUM", type="float")
     parser.add_option("-l", "--lorem", dest="lorem", action="store_true", help="start with \"Lorem ipsum dolor...\"")
     parser.add_option("-f", "--format", metavar="FORMAT", dest="format", action="store", help="produce format in plain, html-p, or html-li format", choices=("plain", "html-p", "html-li"))
+    parser.add_option("-g", "--gui", dest="gui", action="store_true", help="force GUI to start")
 
     return parser.parse_args()
 
@@ -222,8 +254,8 @@ def error(message):
     sys.stderr.write(message)
     exit()
 
-def start_gui(generator):
-    window = LipsumGUI(generator)
+def start_gui(options, generator):
+    window = LipsumGUI(options, generator)
 
 def start_cli(options, generator):
     output = ""
