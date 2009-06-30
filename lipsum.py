@@ -139,10 +139,18 @@ class Generator(object):
     distribution of a given sample text, using the words in a given
     dictionary.
     """
-    # Markov chain statistics
-    __chains = {}
-    __starts = []
+
+    # Words that can be used in the generated output
+    # Maps a word-length to a list of words of that length
     __words = {}
+
+    # Chains of three words that appear in the sample text
+    # Maps a pair of word-lengths to a third word-length and an optional 
+    # piece of trailing punctuation (for example, a period, comma, etc.)
+    __chains = {}
+
+    # Pairs of word-lengths that can appear at the beginning of sentences
+    __starts = []
 
     # Statistics for sentence and paragraph generation
     __sentence_mean = 0
@@ -226,10 +234,16 @@ class Generator(object):
     paragraph_sigma = property(__get_paragraph_sigma, __set_paragraph_sigma)
 
     def __set_sample(self, sample):
+        """
+        Sets the generator to be based on a new sample text.
+        """
         self.__generate_chains(sample)
         self.__generate_statistics(sample)
 
     def __generate_chains(self, sample):
+        """
+        Generates the __chains and __starts values required for sentence generation.
+        """
         words = sample.split()
         previous = (0, 0)
         chains = {}
@@ -263,11 +277,17 @@ class Generator(object):
             raise InvalidSampleTextError
 
     def __generate_statistics(self, sample):
+        """
+        Calculates the mean and standard deviation of sentence and paragraph lengths.
+        """
         self.__generate_sentence_statistics(sample)
         self.__generate_paragraph_statistics(sample)
         self.reset_statistics()
 
     def __split_paragraphs(self, text):
+        """
+        Splits a piece of text into paragraphs, separated by empty lines.
+        """
         text = text.replace('\r\n', '\n')
         text = text.replace('\r', '\n')
         text = text.replace('\n', NEWLINE)
@@ -275,6 +295,10 @@ class Generator(object):
         return paragraphs
 
     def __split_sentences(self, text):
+        """
+        Splits a piece of text into sentences, separated by periods, question 
+        marks and exclamation marks.
+        """
         sentence_split = ''
         for delimiter in DELIMITERS_SENTENCES:
             sentence_split += '\\' + delimiter
@@ -283,9 +307,15 @@ class Generator(object):
         return sentences
 
     def __split_words(self, text):
+        """
+        Splits a piece of text into words, separated by whitespace.
+        """
         return text.split()
 
     def __calculate_mean_sigma(self, values):
+        """
+        Calculates the mean and standard deviation of a list of values.
+        """
         n = len(values)
         mean = sum(map(lambda x : float(x), values)) / n
         variance = sum(map(lambda x : float(x) ** 2, values)) / n - mean ** 2
@@ -294,6 +324,10 @@ class Generator(object):
         return mean, sigma
 
     def __generate_sentence_statistics(self, sample):
+        """
+        Calculates the mean and standard deviation of the lengths of sentences 
+        (in words) in a sample text.
+        """
         sentences = self.__split_sentences(sample)
         sentence_lengths = [len(self.__split_words(sentence))
             for sentence in sentences if len(sentence.strip()) > 0]
@@ -301,6 +335,10 @@ class Generator(object):
             self.__calculate_mean_sigma(sentence_lengths)
 
     def __generate_paragraph_statistics(self, sample):
+        """
+        Calculates the mean and standard deviation of the lengths of paragraphs
+        (in sentences) in a sample text.
+        """
         paragraphs = self.__split_paragraphs(sample)
         paragraph_lengths = [len(self.__split_sentences(paragraph))
             for paragraph in paragraphs if len(paragraph.strip()) > 0]
@@ -319,6 +357,10 @@ class Generator(object):
         self.paragraph_sigma = self.__generated_paragraph_sigma
 
     def __set_dictionary(self, dictionary):
+        """
+        Sets the generator to use a given selection of words for generating 
+        sentences with.
+        """
         self.__dictionary = dictionary
         self.__generate_dictionary()
 
