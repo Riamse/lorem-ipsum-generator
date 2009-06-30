@@ -160,6 +160,16 @@ def choose_closest(values, target):
 
     return closest
 
+def get_word_info(word):
+    longest = (word, "")
+
+    for delimiter in DELIMITERS_WORDS:
+        if len(delimiter) > len(longest[1]) and word.endswith(delimiter):
+            p = word.rpartition(delimiter)
+            longest = (word[0], word[1])
+
+    return (len(longest[0]), longest[1])
+
 
 class InvalidDictionaryTextError(Exception):
     def __str__(self):
@@ -305,37 +315,24 @@ class Generator(object):
         """
         Generates the __chains and __starts values required for sentence generation.
         """
-        words = sample.split()
+        words = split_words(sample)
+        word_info = map(get_word_info, words)
+
         previous = (0, 0)
         chains = {}
-        chains_starts = [previous]
+        starts = [previous]
 
-        for word in words:
-            if not chains.has_key(previous):
-                chains[previous] = []
+        for pair in word_info:
+            chains.setdefault(previous, []).append(pair)
+            if pair[1] in DELIMITERS_SENTENCES:
+                starts.append(previous)
+            previous = (previous[1], pair[0])
 
-            # If the word ends in a "word delimiter", strip it of
-            # the character and record it
-            word_delimiter = ''
-
-            if word[-1] in DELIMITERS_WORDS:
-                word_delimiter = word[-1]
-
-            word = word.rstrip(word_delimiter)
-
-            chains.setdefault(previous, []).append(
-                    (len(word), word_delimiter))
-            previous = (previous[1], len(word))
-
-            # If the word ends in a "sentence delimiter", record it
-            if word_delimiter in DELIMITERS_SENTENCES:
-                chains_starts += [previous]
-
-        if len(chains) > 0 and len(chains_starts) > 0:
+        if len(chains) > 0:
             self.__chains = chains
-            self.__starts = chains_starts
+            self.__starts = starts
         else:
-            raise InvalidSampleTextError
+            raise ValueError("Could not generate chains from sample text.")
 
     def __generate_statistics(self, sample):
         """
