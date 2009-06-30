@@ -403,6 +403,12 @@ class Generator(object):
     sample = property(__get_sample, __set_sample)
     dictionary = property(__get_dictionary, __set_dictionary)
 
+    def __choose_random_start(self):
+        starts = set(self.__starts)
+        chains = set(self.__chains.keys())
+        valid_starts = list(chains:intersection(starts))
+        return random.choice(valid_starts)
+
     def generate_sentence(self, start_with_lorem=False):
         """
         Generates a single sentence, of random length.
@@ -438,8 +444,8 @@ class Generator(object):
         # Generate a sentence from the "chains"
         while len(sentence) < sentence_length:
             # If the current starting point is invalid, choose another randomly
-            while (not self.__chains.has_key(previous)):
-                previous = random.choice(self.__starts)
+            if (not self.__chains.has_key(previous)):
+                previous = self.__choose_random_start()
 
             # Choose the next "chain" to go to. This determines the next word
             # length we'll use, and whether there is e.g. a comma at the end of
