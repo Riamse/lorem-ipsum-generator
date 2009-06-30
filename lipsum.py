@@ -107,6 +107,45 @@ dictionary_text_file = gzip.GzipFile(mode='rb',
 DEFAULT_DICT = dictionary_text_file.read()
 dictionary_text_file.close()
 
+def split_paragraphs(text):
+    """
+    Splits a piece of text into paragraphs, separated by empty lines.
+    """
+    text = text.replace('\r\n', '\n')
+    text = text.replace('\r', '\n')
+    text = text.replace('\n', NEWLINE)
+    paragraphs = text.split(NEWLINE * 2)
+    return paragraphs
+
+def split_sentences(text):
+    """
+    Splits a piece of text into sentences, separated by periods, question 
+    marks and exclamation marks.
+    """
+    sentence_split = ''
+    for delimiter in DELIMITERS_SENTENCES:
+        sentence_split += '\\' + delimiter
+    sentence_split = '[' + sentence_split + ']'
+    sentences = re.split(sentence_split, text)
+    return sentences
+
+def split_words(text):
+    """
+    Splits a piece of text into words, separated by whitespace.
+    """
+    return text.split()
+
+def mean(values):
+    return sum(values) / float(len(values))
+
+def variance(values):
+    squared = map(lambda x : x**2, values)
+    return mean(squared) - mean(values)**2
+
+def sigma(values):
+    return math.sqrt(variance(values))
+
+
 class InvalidDictionaryTextError(Exception):
     def __str__(self):
         return ('Dictionary text must contain one or more white-space '
@@ -284,66 +323,25 @@ class Generator(object):
         self.__generate_paragraph_statistics(sample)
         self.reset_statistics()
 
-    def __split_paragraphs(self, text):
-        """
-        Splits a piece of text into paragraphs, separated by empty lines.
-        """
-        text = text.replace('\r\n', '\n')
-        text = text.replace('\r', '\n')
-        text = text.replace('\n', NEWLINE)
-        paragraphs = text.split(NEWLINE * 2)
-        return paragraphs
-
-    def __split_sentences(self, text):
-        """
-        Splits a piece of text into sentences, separated by periods, question 
-        marks and exclamation marks.
-        """
-        sentence_split = ''
-        for delimiter in DELIMITERS_SENTENCES:
-            sentence_split += '\\' + delimiter
-        sentence_split = '[' + sentence_split + ']'
-        sentences = re.split(sentence_split, text)
-        return sentences
-
-    def __split_words(self, text):
-        """
-        Splits a piece of text into words, separated by whitespace.
-        """
-        return text.split()
-
-    def __calculate_mean_sigma(self, values):
-        """
-        Calculates the mean and standard deviation of a list of values.
-        """
-        n = len(values)
-        mean = sum(map(lambda x : float(x), values)) / n
-        variance = sum(map(lambda x : float(x) ** 2, values)) / n - mean ** 2
-        sigma = math.sqrt(variance)
-
-        return mean, sigma
-
     def __generate_sentence_statistics(self, sample):
         """
         Calculates the mean and standard deviation of the lengths of sentences 
         (in words) in a sample text.
         """
-        sentences = self.__split_sentences(sample)
-        sentence_lengths = [len(self.__split_words(sentence))
-            for sentence in sentences if len(sentence.strip()) > 0]
-        self.__generated_sentence_mean, self.__generated_sentence_sigma = \
-            self.__calculate_mean_sigma(sentence_lengths)
+        sentences = filter(lambda s : len(s.strip()) > 0, split_sentences(sample))
+        sentence_lengths = map(len, map(split_words, sentences))
+        self.__generated_sentence_mean = mean(sentence_lengths)
+        self.__generated_sentence_sigma = sigma(sentence_lengths)
 
     def __generate_paragraph_statistics(self, sample):
         """
         Calculates the mean and standard deviation of the lengths of paragraphs
         (in sentences) in a sample text.
         """
-        paragraphs = self.__split_paragraphs(sample)
-        paragraph_lengths = [len(self.__split_sentences(paragraph))
-            for paragraph in paragraphs if len(paragraph.strip()) > 0]
-        self.__generated_paragraph_mean, self.__generated_paragraph_sigma = \
-            self.__calculate_mean_sigma(paragraph_lengths)
+        paragraphs = filter(lambda s : len(s.strip()) > 0, split_paragraphs(sample))
+        paragraph_lengths = map(len, map(split_sentences, paragraphs))
+        self.__generated_paragraph_mean = mean(paragraph_lengths)
+        self.__generated_paragraph_sigma = sigma(paragraph_lengths)
 
     def reset_statistics(self):
         """
