@@ -15,7 +15,7 @@ setup(
 		url = 'http://code.google.com/p/lorem-ipsum-generator/',
 		py_modules = ['lipsum'],
         scripts = ['src/lorem-ipsum-generator', 'src/.lorem_ipsum_generator_postinstall.py'],
-		data_files = [('share/doc/lorem-ipsum-generator', ['README', 'INSTALL', 'COPYING']), ('share/applications', ['data/lipsum.desktop'])],
+		data_files = [('share/doc/lorem-ipsum-generator', ['README', 'INSTALL', 'COPYING']), ('share/applications', ['data/lorem-ipsum-generator.desktop'])],
         packages = find_packages('src'),
         package_dir = {'' : 'src'},
         package_data = {
