@@ -19,7 +19,7 @@ setup(
         packages = find_packages('src'),
         package_dir = {'' : 'src'},
         package_data = {
-            'lipsum': ['data/lipsum.xml'],
+            'lipsum': ['data/lipsum.xml', 'data/sample.txt', 'data/dictionary.txt'],
             }
 		)
 
