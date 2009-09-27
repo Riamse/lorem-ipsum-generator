@@ -13,7 +13,7 @@ class LipsumGUI:
         import gtk
         import gtk.glade
 
-        self.__generator = MarkupGenerator()
+        self.__generator = generator
 
         filename = 'lorem-ipsum-generator.glade'
 
