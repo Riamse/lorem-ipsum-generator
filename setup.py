@@ -14,7 +14,7 @@ setup(
 		license = 'BSD License',
 		url = 'http://code.google.com/p/lorem-ipsum-generator/',
 		py_modules = ['lipsum'],
-        scripts = ['lorem-ipsum-generator', 'lorem_ipsum_generator_postinstall.py'],
-		data_files = [('share/lorem-ipsum-generator', ['sample.txt', 'dictionary.txt']), ('share/doc/lorem-ipsum-generator', ['README', 'INSTALL', 'COPYING']), ('share/applications', ['lorem-ipsum-generator.desktop'])]
+        scripts = ['lipsum', 'lipsum_postinstall.py'],
+		data_files = [('share/lipsum', ['sample.txt', 'dictionary.txt']), ('share/doc/lorem-ipsum-generator', ['README', 'INSTALL', 'COPYING']), ('share/applications', ['lipsum.desktop'])]
 		)
 

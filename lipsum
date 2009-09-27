@@ -15,44 +15,45 @@ class LipsumGUI:
 
         self.__generator = generator
 
-        filename = 'lorem-ipsum-generator.glade'
+        filename = 'lipsum.xml'
 
-        self.__w_tree = gtk.glade.XML(filename, "main")
+        self.__builder = gtk.Builder()
+        self.__builder.add_from_file(filename)
 
-        self.__main = self.__w_tree.get_widget("main")
-        self.__spinbutton_sentence_mean = self.__w_tree.get_widget("spinbutton_sentence_mean")
+        self.__main = self.__builder.get_object("main")
+        self.__spinbutton_sentence_mean = self.__builder.get_object("spinbutton_sentence_mean")
         self.__spinbutton_sentence_mean.connect('changed', self.__set_sentence_mean)
-        self.__spinbutton_sentence_sigma = self.__w_tree.get_widget("spinbutton_sentence_sigma")
+        self.__spinbutton_sentence_sigma = self.__builder.get_object("spinbutton_sentence_sigma")
         self.__spinbutton_sentence_sigma.connect('changed', self.__set_sentence_sigma)
-        self.__spinbutton_paragraph_mean = self.__w_tree.get_widget("spinbutton_paragraph_mean")
+        self.__spinbutton_paragraph_mean = self.__builder.get_object("spinbutton_paragraph_mean")
         self.__spinbutton_paragraph_mean.connect('changed', self.__set_paragraph_mean)
-        self.__spinbutton_paragraph_sigma = self.__w_tree.get_widget("spinbutton_paragraph_sigma")
+        self.__spinbutton_paragraph_sigma = self.__builder.get_object("spinbutton_paragraph_sigma")
         self.__spinbutton_paragraph_sigma.connect('changed', self.__set_paragraph_sigma)
 
-        self.__button_reset = self.__w_tree.get_widget("button_reset")
+        self.__button_reset = self.__builder.get_object("button_reset")
         self.__button_reset.connect("clicked", self.__reset_statistics)
-        self.__button_generate = self.__w_tree.get_widget("button_generate")
+        self.__button_generate = self.__builder.get_object("button_generate")
         self.__button_generate.connect("clicked", self.__generate_output)
-        self.__button_copy = self.__w_tree.get_widget("button_copy")
+        self.__button_copy = self.__builder.get_object("button_copy")
         self.__button_copy.connect("clicked", self.__copy_output)
-        self.__button_copy_exit = self.__w_tree.get_widget("button_copy_exit")
+        self.__button_copy_exit = self.__builder.get_object("button_copy_exit")
         self.__button_copy_exit.connect("clicked", self.__copy_exit_output)
 
-        self.__spinbutton_quantity = self.__w_tree.get_widget("spinbutton_quantity")
-        self.__radiobutton_quantity_paragraphs = self.__w_tree.get_widget("radiobutton_quantity_paragraphs")
-        self.__radiobutton_quantity_sentences = self.__w_tree.get_widget("radiobutton_quantity_sentences")
-        self.__radiobutton_format_plain = self.__w_tree.get_widget("radiobutton_format_plain")
-        self.__radiobutton_format_html_paragraphs = self.__w_tree.get_widget("radiobutton_format_html_paragraphs")
-        self.__radiobutton_format_html_list = self.__w_tree.get_widget("radiobutton_format_html_list")
-        self.__checkbutton_start_with_lorem = self.__w_tree.get_widget("checkbutton_start_with_lorem")
+        self.__spinbutton_quantity = self.__builder.get_object("spinbutton_quantity")
+        self.__radiobutton_quantity_paragraphs = self.__builder.get_object("radiobutton_quantity_paragraphs")
+        self.__radiobutton_quantity_sentences = self.__builder.get_object("radiobutton_quantity_sentences")
+        self.__radiobutton_format_plain = self.__builder.get_object("radiobutton_format_plain")
+        self.__radiobutton_format_html_paragraphs = self.__builder.get_object("radiobutton_format_html_paragraphs")
+        self.__radiobutton_format_html_list = self.__builder.get_object("radiobutton_format_html_list")
+        self.__checkbutton_start_with_lorem = self.__builder.get_object("checkbutton_start_with_lorem")
 
-        self.__filechooserbutton_sample = self.__w_tree.get_widget("filechooserbutton_sample")
+        self.__filechooserbutton_sample = self.__builder.get_object("filechooserbutton_sample")
         self.__filechooserbutton_sample.connect('selection-changed', self.__set_sample_file)
-        self.__filechooserbutton_dictionary = self.__w_tree.get_widget("filechooserbutton_dictionary")
+        self.__filechooserbutton_dictionary = self.__builder.get_object("filechooserbutton_dictionary")
         self.__filechooserbutton_dictionary.connect('selection-changed', self.__set_dictionary_file)
         
         self.__textbuffer_output = gtk.TextBuffer()
-        self.__textview_output = self.__w_tree.get_widget("textview_output")
+        self.__textview_output = self.__builder.get_object("textview_output")
         self.__textview_output.set_buffer(self.__textbuffer_output)
         self.__clipboard = gtk.Clipboard()
         
@@ -126,6 +127,9 @@ class LipsumGUI:
             elif options.sentences:
                 self.__spinbutton_quantity.set_value(options.sentences)
                 self.__radiobutton_quantity_sentences.set_active(True)
+            else:
+                self.__spinbutton_quantity.set_value(5)
+                self.__radiobutton_quantity_paragraphs.set_active(True)
 
             if options.format == "html-p":
                 self.__radiobutton_format_html_paragraphs.set_active(True)

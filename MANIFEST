@@ -1,10 +1,8 @@
 COPYING
 INSTALL
 README
-dictionary.txt
 lipsum.py
-lorem-ipsum-generator
-lorem-ipsum-generator.desktop
-sample.txt
+lipsum
+lipsum.desktop
 setup.cfg
 setup.py
