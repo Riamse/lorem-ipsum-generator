@@ -106,9 +106,15 @@ class InvalidSampleError(Exception):
 
 class Generator(object):
     """
-    Generates random strings of "lorem ipsum" text, based on the word
-    distribution of a given sample text, using the words in a given
-    dictionary.
+    Generates random strings of "lorem ipsum" text.
+
+    Markov chains are used to generate the random text based on the analysis 
+    of a sample text. In the analysis, only paragraph, sentence and word 
+    lengths, and some basic punctuation matter -- the actual words are 
+    ignored. A provided list of words is then used to generate the random text,
+    so that it will have a similar distribution of paragraph, sentence and word
+    lengths.
+
     """
 
     # Words that can be used in the generated output
@@ -140,10 +146,8 @@ class Generator(object):
 
     def __init__(self, sample=_DEFAULT_SAMPLE, dictionary=_DEFAULT_DICT):
         """
-        Initialises a lorem ipsum generator by performing ahead of time
-        the calculations required by all "generations".
-
-        Requires a sample text and a list of words.
+        Initialises a generator that will use the provided sample text and 
+        dictionary to produce sentences.
 
         """
         self.sample = sample
@@ -276,22 +280,35 @@ class Generator(object):
         self.paragraph_sigma = self.__generated_paragraph_sigma
 
     def __get_sample(self):
+        """
+        The sample text that generated sentences are based on.
+
+        Sentences are generated so that they will have a similar distribution 
+        of word, sentence and paragraph lengths and punctuation.
+
+        Sample text should be a string consisting of a number of paragraphs, 
+        each separated by empty lines. Each paragraph should consist of a 
+        number of sentences, separated by periods, exclamation marks and/or
+        question marks. Sentences consist of words, separated by white space.
+        """
         return self.__sample
 
     def __set_sample(self, sample):
-        """
-        Sets the generator to be based on a new sample text.
-        """
         self.__sample = sample
         self.__generate_chains(sample)
         self.__generate_statistics(sample)
 
+    def __get_dictionary(self):
+        """
+        The list of words that generated sentences are made of.
+
+        The dictionary should be a list of one or more words, as strings.
+        """
+        dictionary = []
+        map(dictionary.extend, self.__words.values())
+        return dictionary
 
     def __set_dictionary(self, dictionary):
-        """
-        Sets the generator to use a given selection of words for generating 
-        sentences with.
-        """
         words = {}
 
         for word in dictionary:
@@ -305,11 +322,6 @@ class Generator(object):
             self.__words = words
         else:
             raise InvalidDictionaryError
-
-    def __get_dictionary(self):
-        dictionary = []
-        map(dictionary.extend, self.__words.values())
-        return dictionary
 
     sample = property(__get_sample, __set_sample)
     dictionary = property(__get_dictionary, __set_dictionary)
@@ -420,12 +432,9 @@ class Generator(object):
 
 class MarkupGenerator(Generator):
     """
-    Generates random strings of "lorem ipsum" text, based on the word
-    distribution of a given sample text, using the words in a given
-    dictionary.
-
     Provides a number of methods for producing "lorem ipsum" text with
     varying formats.
+
     """
     def __generate_markup(self, begin, end, between, quantity,
         start_with_lorem, function):

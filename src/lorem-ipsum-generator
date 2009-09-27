@@ -4,7 +4,7 @@ import sys
 from os.path import abspath, exists
 from optparse import OptionParser
 
-from lipsum import MarkupGenerator
+from lipsum import MarkupGenerator, InvalidSampleError, InvalidDictionaryError
 
 class LipsumGUI:
     def __init__(self, options = None, generator=MarkupGenerator()):
@@ -108,8 +108,12 @@ class LipsumGUI:
                 sample = load_contents(filename)
             except IOError:
                 self.__ioerror(filename)
-            self.__generator.sample = sample
-            self.__update_statistic_fields()
+
+            try:
+                self.__generator.sample = sample
+                self.__update_statistic_fields()
+            except InvalidSampleError:
+                pass
 
     def __set_dictionary_file(self, w):
         filename = self.__filechooserbutton_dictionary.get_filename()
@@ -118,7 +122,10 @@ class LipsumGUI:
                 dictionary = load_contents(filename).split()
             except IOError:
                 self.__ioerror(filename)
-            self.__generator.dictionary = dictionary
+            try:
+                self.__generator.dictionary = dictionary
+            except InvalidDictionaryError:
+                pass
 
     def __set_defaults(self, options):
         if options:
@@ -194,7 +201,7 @@ class LipsumGUI:
         self.__spinbutton_paragraph_sigma.set_value(self.__generator.paragraph_sigma)
 
 def load_contents(file):
-    file = open(file, 'r')
+    file = open(abspath(file), 'r')
     contents = file.read()
     file.close()
     return contents
@@ -233,12 +240,16 @@ def init_generator(options):
             generator.sample = load_contents(options.sample_path)
         except IOError:
             error('Unable to load sample file "%s".\n' % options.sample_path)
+        except InvalidSampleError:
+            error('Invalid sample file "%s".\n' % options.sample_path)
 
     if options.dictionary_path:
         try:
             generator.dictionary = load_contents(options.dictionary_path).split()
         except IOError:
             error('Unable to load dictionary file "%s".\n' % options.dictionary_path)
+        except InvalidDictionaryError:
+            error('Invalid sample file "%s".\n' % options.dictionary_path)
 
     # Set statistics
     try:
