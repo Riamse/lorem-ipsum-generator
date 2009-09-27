@@ -1,6 +1,6 @@
 include README
 include INSTALL
 include COPYING
-include lipsum
+include src/lorem-ipsum-generator
 include data/*
 include src/lipsum/data/*

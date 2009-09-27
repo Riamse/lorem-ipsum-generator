@@ -14,7 +14,7 @@ setup(
 		license = 'BSD License',
 		url = 'http://code.google.com/p/lorem-ipsum-generator/',
 		py_modules = ['lipsum'],
-        scripts = ['lipsum', 'src/lipsum_postinstall.py'],
+        scripts = ['src/lorem-ipsum-generator', 'src/.lorem_ipsum_generator_postinstall.py'],
 		data_files = [('share/doc/lorem-ipsum-generator', ['README', 'INSTALL', 'COPYING']), ('share/applications', ['data/lipsum.desktop'])],
         packages = find_packages('src'),
         package_dir = {'' : 'src'},
