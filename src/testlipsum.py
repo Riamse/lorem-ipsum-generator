@@ -94,20 +94,41 @@ class TestGenerator(unittest.TestCase):
     def test_sentence_mean(self):
         self.assertEquals(self.generator.sentence_mean, 5)
 
+    def test_set_sentence_mean(self):
+        self.generator.sentence_mean = 4
+        self.assertEquals(self.generator.sentence_mean, 4)
+
     def test_paragraph_mean(self):
         self.assertEquals(self.generator.paragraph_mean, 2)
+
+    def test_set_paragraph_mean(self):
+        self.generator.paragraph_mean = 4
+        self.assertEquals(self.generator.paragraph_mean, 4)
 
     def test_sentence_sigma(self):
         self.assertEquals(self.generator.sentence_sigma, 1)
 
+    def test_set_sentence_sigma(self):
+        self.generator.sentence_sigma = 4
+        self.assertEquals(self.generator.sentence_sigma, 4)
+
     def test_paragraph_sigma(self):
         self.assertEquals(self.generator.paragraph_sigma, 0)
+
+    def test_set_paragraph_sigma(self):
+        self.generator.paragraph_sigma = 4
+        self.assertEquals(self.generator.paragraph_sigma, 4)
 
     def test_sample(self):
         self.assertEquals(self.generator.sample, self.sample)
 
     def test_dictionary(self):
         self.assertEquals(set(self.generator.dictionary), set(self.dictionary))
+
+    def test_dictionary(self):
+        newdict = ["a", "b", "c"]
+        self.generator.dictionary = newdict
+        self.assertEquals(set(self.generator.dictionary), set(newdict))
 
     def test_init_no_sample(self):
         self.assertRaises(lipsum.InvalidSampleError, lipsum.Generator, "", self.dictionary)
