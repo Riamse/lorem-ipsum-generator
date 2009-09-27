@@ -12,10 +12,11 @@ class LipsumGUI:
         pygtk.require("2.0")
         import gtk
         import gtk.glade
+        import pkg_resources
 
         self.__generator = generator
 
-        filename = 'lipsum.xml'
+        filename = pkg_resources.resource_filename('lipsum', 'data/lipsum.xml')
 
         self.__builder = gtk.Builder()
         self.__builder.add_from_file(filename)
