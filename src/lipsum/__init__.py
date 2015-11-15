@@ -62,7 +62,7 @@ def _mean(values):
 def _variance(values):
     #import statistics
     #return statistics.variance(values)
-    squared = map(lambda x : x**2, values)
+    squared = [x**2 for x in values]
     return _mean(squared) - _mean(values)**2
 
 def _sigma(values):
