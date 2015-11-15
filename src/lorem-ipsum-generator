@@ -261,7 +261,7 @@ def init_generator(options):
             generator.sentence_sigma = options.sentence_sigma
         if options.paragraph_sigma:
             generator.paragraph_sigma = options.paragraph_sigma
-    except ValueError, e:
+    except ValueError as e:
         error("%s\n" % e)
 
     return generator
@@ -291,7 +291,7 @@ def start_cli(options, generator):
         else:
             output = generator.generate_sentences_plain(options.sentences, options.lorem)
 
-    print output
+    print(output)
 
 if __name__ == '__main__':
     main()
