@@ -8,10 +8,14 @@ from lipsum import MarkupGenerator, InvalidSampleError, InvalidDictionaryError
 
 class LipsumGUI:
     def __init__(self, options = None, generator=MarkupGenerator()):
-        import pygtk
-        pygtk.require("2.0")
+        try:
+            from gi import pygtkcompat
+        except ImportError:
+            pygtkcompat = None
+        if pygtkcompat is not None:
+            pygtkcompat.enable()
+            pygtkcompat.enable_gtk()
         import gtk
-        import gtk.glade
         import pkg_resources
 
         self.__generator = generator
@@ -56,7 +60,7 @@ class LipsumGUI:
         self.__textbuffer_output = gtk.TextBuffer()
         self.__textview_output = self.__builder.get_object("textview_output")
         self.__textview_output.set_buffer(self.__textbuffer_output)
-        self.__clipboard = gtk.Clipboard()
+        self.__clipboard = gtk.clipboard_get(selection=gtk.gdk.SELECTION_CLIPBOARD)
         
         self.__update_statistic_fields()
         self.__set_defaults(options)
@@ -90,12 +94,13 @@ class LipsumGUI:
         self.__textbuffer_output.set_text(output)
 
     def __copy_output(self, w):
-        self.__clipboard.set_text(
-                self.__textbuffer_output.get_text(
-                    self.__textbuffer_output.get_start_iter(),
-                    self.__textbuffer_output.get_end_iter()
-                    )
-                )
+        text = self.__textbuffer_output.get_text(
+                self.__textbuffer_output.get_start_iter(),
+                self.__textbuffer_output.get_end_iter(),
+                False
+        )
+        print(text)
+        self.__clipboard.set_text(text, len(text))
 
     def __copy_exit_output(self, w):
         self.__copy_output(w)

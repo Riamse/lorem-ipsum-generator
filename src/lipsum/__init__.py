@@ -1,4 +1,4 @@
-from cStringIO import StringIO
+from io import StringIO
 import base64
 import gzip
 import math
@@ -16,9 +16,9 @@ _DELIMITERS_WORDS = [','] + _DELIMITERS_SENTENCES
 
 _NEWLINE = os.linesep
 
-_DEFAULT_SAMPLE = pkg_resources.resource_string('lipsum', 'data/sample.txt')
+_DEFAULT_SAMPLE = str(pkg_resources.resource_string('lipsum', 'data/sample.txt'), 'utf8')
 
-_DEFAULT_DICT = pkg_resources.resource_string('lipsum', 'data/dictionary.txt').split()
+_DEFAULT_DICT = str(pkg_resources.resource_string('lipsum', 'data/dictionary.txt'), 'utf8').split()
 
 def _split_paragraphs(text):
     """
@@ -32,10 +32,7 @@ def _split_paragraphs(text):
             paragraphs[-1] += [line]
         elif len(paragraphs[-1]) > 0:
             paragraphs.append([])
-    paragraphs = map(' '.join, paragraphs)
-    paragraphs = map(str.strip, paragraphs)
-    paragraphs = filter(lambda s : s != '', paragraphs)
-    return paragraphs
+    return [' '.join(s).strip() for s in paragraphs if s != '']
 
 def _split_sentences(text):
     """
@@ -48,9 +45,7 @@ def _split_sentences(text):
         sentence_split += '\\' + delimiter
     sentence_split = '[' + sentence_split + ']'
     sentences = re.split(sentence_split, text.strip())
-    sentences = map(str.strip, sentences)
-    sentences = filter(lambda s : s != '', sentences)
-    return sentences
+    return [s.strip() for s in sentences if s != '']
 
 def _split_words(text):
     """
@@ -60,13 +55,18 @@ def _split_words(text):
     return text.split()
 
 def _mean(values):
-    return sum(values) / float(max(len(values), 1))
+    import statistics
+    return statistics.mean(values)
 
 def _variance(values):
+    import statistics
+    return statistics.variance(values)
     squared = map(lambda x : x**2, values)
     return _mean(squared) - _mean(values)**2
 
 def _sigma(values):
+    import statistics
+    return statistics.stdev(values)
     return math.sqrt(_variance(values))
 
 def _choose_closest(values, target):
@@ -254,7 +254,7 @@ class Generator(object):
         (in words) in a sample text.
         """
         sentences = filter(lambda s : len(s.strip()) > 0, _split_sentences(sample))
-        sentence_lengths = map(len, map(_split_words, sentences))
+        sentence_lengths = [len(x) for x in map(_split_words, sentences)]
         self.__generated_sentence_mean = _mean(sentence_lengths)
         self.__generated_sentence_sigma = _sigma(sentence_lengths)
 
@@ -263,8 +263,8 @@ class Generator(object):
         Calculates the mean and standard deviation of the lengths of paragraphs
         (in sentences) in a sample text.
         """
-        paragraphs = filter(lambda s : len(s.strip()) > 0, _split_paragraphs(sample))
-        paragraph_lengths = map(len, map(_split_sentences, paragraphs))
+        paragraphs = [p for p in _split_paragraphs(sample) if len(p.strip())]
+        paragraph_lengths = [len(x) for x in map(_split_sentences, paragraphs)]
         self.__generated_paragraph_mean = _mean(paragraph_lengths)
         self.__generated_paragraph_sigma = _sigma(paragraph_lengths)
 
@@ -305,7 +305,8 @@ class Generator(object):
         The dictionary should be a list of one or more words, as strings.
         """
         dictionary = []
-        map(dictionary.extend, self.__words.values())
+        for v in self.__words.values():
+            dictionary.extend(v)
         return dictionary
 
     def __set_dictionary(self, dictionary):
@@ -367,7 +368,7 @@ class Generator(object):
         # Generate a sentence from the "chains"
         while len(sentence) < sentence_length:
             # If the current starting point is invalid, choose another randomly
-            if (not self.__chains.has_key(previous)):
+            if previous not in self.__chains:
                 previous = self.__choose_random_start()
 
             # Choose the next "chain" to go to. This determines the next word
@@ -388,9 +389,9 @@ class Generator(object):
             # Choose a word randomly that matches (or closely matches) the
             # length we're after.
             closest_length = _choose_closest(
-                    self.__words.keys(),
+                    tuple(self.__words.keys()),
                     word_length)
-            word = random.choice(list(self.__words[closest_length]))
+            word = random.choice(tuple(self.__words[closest_length]))
 
             sentence += [word + word_delimiter]
             previous = (previous[1], word_length)
