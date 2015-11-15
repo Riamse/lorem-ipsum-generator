@@ -32,7 +32,7 @@ def _split_paragraphs(text):
             paragraphs[-1] += [line]
         elif len(paragraphs[-1]) > 0:
             paragraphs.append([])
-    return [' '.join(s).strip() for s in paragraphs if s != '']
+    return [' '.join(s).strip() for s in paragraphs if ' '.join(s).strip()]
 
 def _split_sentences(text):
     """
@@ -45,7 +45,7 @@ def _split_sentences(text):
         sentence_split += '\\' + delimiter
     sentence_split = '[' + sentence_split + ']'
     sentences = re.split(sentence_split, text.strip())
-    return [s.strip() for s in sentences if s != '']
+    return [s.strip() for s in sentences if s.strip()]
 
 def _split_words(text):
     """
@@ -55,18 +55,19 @@ def _split_words(text):
     return text.split()
 
 def _mean(values):
-    import statistics
-    return statistics.mean(values)
+    #import statistics
+    #return statistics.mean(values)
+    return sum(values) / float(max(len(values), 1))
 
 def _variance(values):
-    import statistics
-    return statistics.variance(values)
+    #import statistics
+    #return statistics.variance(values)
     squared = map(lambda x : x**2, values)
     return _mean(squared) - _mean(values)**2
 
 def _sigma(values):
-    import statistics
-    return statistics.stdev(values)
+    #import statistics
+    #return statistics.stdev(values)
     return math.sqrt(_variance(values))
 
 def _choose_closest(values, target):
